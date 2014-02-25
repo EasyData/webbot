@@ -26,7 +26,7 @@ class WebbotSpider(CrawlSpider):
     name = 'webbot'
 
     def __init__(self, config=None, debug=None, verbose=0, **kwargs):
-        super(ExampleSpider, self).__init__()
+        super(WebbotSpider, self).__init__()
         self.config = config
         self.debug = debug
         self.verbose = int(verbose)
@@ -367,8 +367,4 @@ class WebbotSpider(CrawlSpider):
                                         allow=regex,
                                         restrict_xpaths=xpath,
                                         process_value=utils.first_n_pages(regex, pages))
-
-
-class JsonbotSpider(ExampleSpider):
-    name = "jsonbot"
 
