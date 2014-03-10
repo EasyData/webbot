@@ -4,6 +4,7 @@
 
 from scrapy import log
 from scrapy.exceptions import DropItem
+from scrapy.item import Item
 from datetime import datetime
 from webbot.utils import utils
 import re, traceback
@@ -64,6 +65,7 @@ class MongoPipeline(object):
     def open_spider(self, spider):
         if hasattr(spider, 'mongo'):
             try:
+                self.upsert_keys = self.get_upsert_keys()
                 uri = spider.mongo
                 log.msg('connect <{}>'.format(uri))
                 self.cnn, self.db, self.tbl = utils.connect_uri(uri)
@@ -73,12 +75,20 @@ class MongoPipeline(object):
 
         self.cnn = self.db = None
 
+    def get_upsert_keys(self):
+        keys = []
+        for k,v in Item.fields.iteritems():
+            if 'name' in v and v.get('upsert'):
+                keys.append(v['name'])
+        return keys
+
     def process_item(self, item, spider):
         if self.cnn:
             try:
                 post = item2post(item)
-                if '_id' in post:
-                    self.tbl.update({'_id':post['_id']}, post, {'upsert':True})
+                if self.upsert_keys:
+                    criteria = {k:post[k] for k in self.upsert_keys}
+                    self.tbl.update(criteria, post, upsert=True)
                 else:
                     self.tbl.insert(post)
             except Exception as ex:

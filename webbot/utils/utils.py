@@ -50,6 +50,8 @@ def feed_uri_params_parser(params, spider):
 
 def connect_uri(uri):
 
+    uri = uri.replace('mongo://', 'mongodb://')
+
     if uri.startswith('mongodb://'):
         import pymongo
         parsed = pymongo.uri_parser.parse_uri(uri)

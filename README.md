@@ -374,6 +374,11 @@ Webbot用户手册
     * `min`, 最大数值, 只能用于过滤`number`类型的字段
     * `max`, 最小数值, 只能用于过滤`number`类型的字段
 
+- `upsert`, 更新/插入模式切换, 值类型为`bool`, 默认值为`false`. (仅用于`mongo`入库)
+
+    * 当其值为`true`时, 使用`mongo-upsert`方式入库
+    * 当其值为`false`时, 使用`mongo-insert`方式入库
+
 另外, **rules** 以及 **fields** 中的`value`及`xpath`中可以嵌入变量(形如, `${VARNAME}`), 目前支持下列变量:
 
     'UTCNOW':   utcnow.strftime('%Y-%m-%d %H:%M:%S'),

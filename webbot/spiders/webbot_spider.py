@@ -160,6 +160,7 @@ class WebbotSpider(CrawlSpider):
                 Item.fields[k] = Field()
                 if 'name' in v:
                     Item.fields[k]['name'] = v['name']
+                Item.fields[k]['upsert'] = v.get('upsert')
 
         loop = self.macro.expand(conf.get('loop', ''))
         if loop.startswith('css:'):
