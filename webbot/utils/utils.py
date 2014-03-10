@@ -151,6 +151,8 @@ def load_db(uri):
             words = rdb.zrange(key, start, stop)
         elif t=='list':
             words = rdb.lrange(key, start, stop)
+        elif t=='hash':
+            words = rdb.hvals(key)
         elif t=='string':
             words = [rdb.get(key)]
         else:
