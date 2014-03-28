@@ -372,12 +372,14 @@ class MacroExpander(object):
         })
         self.macros.update(env)
 
-    def expand(self, value):
+    def expand(self, value, env={}):
         if type(value)!=str and type(value)!=unicode:
             return value
-        template = string.Template(value)
+        env = {k:v for k,v in env.iteritems() if k.isupper()}
         self.update()
-        return template.safe_substitute(self.macros)
+        env.update(self.macros)
+        tpl = string.Template(value)
+        return tpl.safe_substitute(env)
 
 
 def tz_offset(tz):

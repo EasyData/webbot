@@ -14,6 +14,7 @@ from scrapy.selector import HtmlXPathSelector
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import CaselessDict
 from cssselect.xpath import HTMLTranslator
+from webbot.spiders.mycrawl import MyCrawlSpider
 from webbot.utils import utils
 from webbot import settings
 from urllib2 import urlparse
@@ -21,7 +22,7 @@ from pprint import pprint
 import re, json, jsonpath, Cookie, traceback
 
 
-class WebbotSpider(CrawlSpider):
+class WebbotSpider(MyCrawlSpider):
 
     name = 'webbot'
 
@@ -102,6 +103,7 @@ class WebbotSpider(CrawlSpider):
                 xpath = self.macro.expand(v.get('xpath'))
             pages = v.get('pages')
             sub = v.get('sub')
+            vars = v.get('vars')
 
             rule = Rule(
                 SgmlLinkExtractor(
@@ -109,6 +111,7 @@ class WebbotSpider(CrawlSpider):
                     restrict_xpaths=xpath,
                     process_value=utils.first_n_pages(regex, pages)),
                 process_links=self.sub_links(sub),
+                process_request=self.set_vars(k, vars),
                 callback=callback,
                 follow=follow
             )
@@ -255,6 +258,7 @@ class WebbotSpider(CrawlSpider):
                 yield item
 
     def parse_html_item(self, response, loop, fields):
+        meta = response.meta
         hxs = HtmlXPathSelector(response)
         self.macro.update({'URL':response.url})
 
@@ -277,13 +281,13 @@ class WebbotSpider(CrawlSpider):
                     continue
 
                 val = get_v_x(
-                    self.macro.expand(v_x),
+                    self.macro.expand(v_x, meta),
                     utils.convert_type(v.get('parse', {})),
                     re=v.get('regex')
                 )
 
                 if not val and 'default' in v:
-                    val = self.macro.expand(v.get('default'))
+                    val = self.macro.expand(v.get('default'), meta)
 
                 qry = v.get('filter', {})
                 if utils.filter_data(qry, val):
@@ -333,6 +337,20 @@ class WebbotSpider(CrawlSpider):
             return new_links
 
         return _sub
+
+    def set_vars(self, key, vars):
+
+        if not vars:
+            return lambda x:x
+
+        def _proc(request, response):
+            meta = request.meta
+            hxs = HtmlXPathSelector(response)
+            for k,v in vars.iteritems():
+                meta[k] = (hxs.select(v).extract() or [''])[0]
+            return request
+
+        return _proc
 
     # TODO: should persistent accross session
     def make_headers(self, headers):
