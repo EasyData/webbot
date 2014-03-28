@@ -220,7 +220,11 @@ Webbot用户手册
         "#4": {
             "follow": false,
             "regex" : "/p/[0-9]+",
-            "xpath" : "//ul[@id='thread_list']//a[@class='j_th_tit']"
+            "xpath" : "//ul[@id='thread_list']//a[@class='j_th_tit']",
+            "vars"  : {
+                "FOO": "//title/text()",
+                "BAR": "//h1/text()"
+            }
         }
     }
 
@@ -251,8 +255,10 @@ Webbot用户手册
     * `start`, 起始页码(包含), 值类型为`int`, 默认值为`1`.
     * `stop`, 终止页面(不包含), 值类型为`int`, 默认值为`5`.
     * `group`, 需要提取的`regex`分组编号, 值类型为`int`, 默认值为`1`.
+- `vars`, 提取变量, 在`fields`中通过`${VAR}`引用
 
 > 注意: `regex`, `xpath`, `pages`都是用来对链接进行过滤的, 需要同时满足.
+> 注意: `vars`中定义的变量名需要英文大写
 
 ## loop
 

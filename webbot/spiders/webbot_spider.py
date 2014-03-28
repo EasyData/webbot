@@ -347,7 +347,8 @@ class WebbotSpider(MyCrawlSpider):
             meta = request.meta
             hxs = HtmlXPathSelector(response)
             for k,v in vars.iteritems():
-                meta[k] = (hxs.select(v).extract() or [''])[0]
+                if k.isupper():
+                    meta[k] = (hxs.select(v).extract() or [''])[0]
             return request
 
         return _proc
