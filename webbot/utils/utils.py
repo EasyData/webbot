@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-# A simple spider written by Kev++
 
-from scrapy import log
-from scrapy.utils.url import canonicalize_url
-from scrapy.utils.markup import remove_tags
-from scrapy.contrib.loader.processor import Compose, Join, TakeFirst
-from scrapy.exceptions import CloseSpider
-from chardet import detect
-from random import randint
-from urllib import urlencode
-from urllib2 import urlopen, urlparse
-from datetime import datetime, timedelta
 from HTMLParser import HTMLParser
+from chardet import detect
+from datetime import datetime, timedelta
 from lxml import etree, html
 from lxml.html.clean import Cleaner
+from random import randint
+from scrapy import log
+from scrapy.contrib.loader.processor import Compose, Join, TakeFirst
+from scrapy.exceptions import CloseSpider
+from scrapy.utils.markup import remove_tags
+from scrapy.utils.url import canonicalize_url
+from urllib import urlencode
+from urllib2 import urlopen, urlparse
 import os.path, codecs, re, json, jsonpath, string, base64, time, hashlib, imp, tempfile, zlib
 
 try:
@@ -408,8 +407,8 @@ def parse_date(data, fmt, tz):
         x = re.sub(ur'[年月]',  '/', x)
         x = re.sub(ur'[日]',    ' ', x)
         x = re.sub(ur'半\s*[天日]前',  u'12小时前', x)
-        x = re.sub(ur'半\s*小?时前',u'30分钟前', x)
-        x = re.sub(ur'半\s*分钟前',u'30秒钟前', x)
+        x = re.sub(ur'半\s*小?时前', u'30分钟前', x)
+        x = re.sub(ur'半\s*分钟前', u'30秒钟前', x)
         x = re.sub(ur'\s{2,}', r' ', x)
 
         # XX前

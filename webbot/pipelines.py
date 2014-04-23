@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-# Define your item pipelines here
 
+from datetime import datetime
 from scrapy import log
 from scrapy.exceptions import DropItem
 from scrapy.item import Item
-from datetime import datetime
 from webbot.utils import utils
 import re, traceback
 
-
 def item2post(item):
+
     post = {}
     for k,v in item.fields.iteritems():
         if 'name' in v:
@@ -19,6 +18,7 @@ def item2post(item):
 
 
 class BasicPipeline(object):
+
     def process_item(self, item, spider):
         try:
             for k,v in item.fields.iteritems():
@@ -30,6 +30,7 @@ class BasicPipeline(object):
 
 
 class DebugPipeline(object):
+
     def open_spider(self, spider):
         self.idx = 0
 
@@ -62,6 +63,7 @@ class DebugPipeline(object):
 
 # 数据存储(mongo)
 class MongoPipeline(object):
+
     def open_spider(self, spider):
         if hasattr(spider, 'mongo'):
             try:
@@ -104,6 +106,7 @@ class MongoPipeline(object):
 
 # 数据存储(mysql)
 class MysqlPipeline(object):
+
     def open_spider(self, spider):
         if hasattr(spider, 'mysql'):
             try:
@@ -147,6 +150,7 @@ class MysqlPipeline(object):
 
 # 消息队列(zmq)
 class ZmqPipeline(object):
+
     def open_spider(self, spider):
         if hasattr(spider, 'zmq'):
             try:

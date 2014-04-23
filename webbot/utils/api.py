@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 # THIS FILE IS COPYED FROM <broker.api>
 
 import zlib

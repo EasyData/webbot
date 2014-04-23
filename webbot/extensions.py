@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-from scrapy import signals
-from scrapy import log
 from datetime import datetime
+from scrapy import log
+from scrapy import signals
 from webbot.utils import utils
 import os
 

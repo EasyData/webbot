@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-# A complicated spider written by Kev++
-# 2013-12-17
 
+from cssselect.xpath import HTMLTranslator
 from scrapy import log
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-from scrapy.contrib.loader import XPathItemLoader
+from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.exceptions import CloseSpider
 from scrapy.http import Request, FormRequest
 from scrapy.item import Item, Field
-from scrapy.selector import HtmlXPathSelector
-from scrapy.utils.misc import arg_to_iter
+from scrapy.selector import Selector
 from scrapy.utils.datatypes import CaselessDict
-from cssselect.xpath import HTMLTranslator
+from scrapy.utils.misc import arg_to_iter
+from urllib2 import urlparse
+from webbot import settings
 from webbot.spiders.mycrawl import MyCrawlSpider
 from webbot.utils import utils
-from webbot import settings
-from urllib2 import urlparse
-from pprint import pprint
-import re, json, jsonpath, Cookie, traceback
-
+import Cookie
+import json
+import jsonpath
+import re
+import traceback
 
 class WebbotSpider(MyCrawlSpider):
 
@@ -109,7 +109,8 @@ class WebbotSpider(MyCrawlSpider):
                 SgmlLinkExtractor(
                     allow=regex,
                     restrict_xpaths=xpath,
-                    process_value=utils.first_n_pages(regex, pages)),
+                    process_value=utils.first_n_pages(regex, pages)
+                ),
                 process_links=self.sub_links(sub),
                 process_request=self.set_vars(k, vars),
                 callback=callback,
@@ -259,20 +260,19 @@ class WebbotSpider(MyCrawlSpider):
 
     def parse_html_item(self, response, loop, fields):
         meta = response.meta
-        hxs = HtmlXPathSelector(response)
+        hxs = Selector(response)
         self.macro.update({'URL':response.url})
 
-        for e in hxs.select(loop or '(//*)[1]'):
-            loader = XPathItemLoader(item=Item(), selector=e)
+        for e in hxs.xpath(loop or '(//*)[1]'):
+            loader = ItemLoader(item=Item(), selector=e)
 
             for k,v in fields.iteritems():
                 if 'value' in v:
                     get_v_x = loader.get_value
                     v_x = v.get('value')
-                # TODO: support macros in `css`
                 elif 'css' in v:
-                    get_v_x = loader.get_xpath
-                    v_x = self.tr.css_to_xpath(v.get('css'))
+                    get_v_x = loader.get_css
+                    v_x = v.get('css')
                 elif 'xpath' in v:
                     get_v_x = loader.get_xpath
                     v_x = v.get('xpath')
@@ -345,10 +345,10 @@ class WebbotSpider(MyCrawlSpider):
 
         def _proc(request, response):
             meta = request.meta
-            hxs = HtmlXPathSelector(response)
+            hxs = Selector(response)
             for k,v in vars.iteritems():
                 if k.isupper():
-                    meta[k] = (hxs.select(v).extract() or [''])[0]
+                    meta[k] = (hxs.xpath(v).extract() or [''])[0]
             return request
 
         return _proc
@@ -358,7 +358,7 @@ class WebbotSpider(MyCrawlSpider):
         headers = CaselessDict(headers)
         if 'user-agent' in headers:
             self.user_agent = headers.pop('user-agent')
-        self.cookies = self.make_cookies(headers.pop('cookies', {}))
+        self.cookies = self.make_cookies(headers.pop('cookie', {}))
         self.headers = headers
 
     def make_cookies(self, cookies):
@@ -384,7 +384,8 @@ class WebbotSpider(MyCrawlSpider):
             else:
                 xpath = self.macro.expand(pages.get('xpath'))
             self.page_extractor = SgmlLinkExtractor(
-                                        allow=regex,
-                                        restrict_xpaths=xpath,
-                                        process_value=utils.first_n_pages(regex, pages))
+                allow=regex,
+                restrict_xpaths=xpath,
+                process_value=utils.first_n_pages(regex, pages)
+            )
 

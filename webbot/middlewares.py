@@ -1,28 +1,17 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-# A simple spider written by Kev++
 
 try:
     from twisted.web._newclient import ResponseNeverReceived
 except ImportError:
     from scrapy.xlib.tx._newclient import ResponseNeverReceived
+from scrapy import signals, log
 from scrapy.contrib.downloadermiddleware import retry
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
-from scrapy import signals, log
 from urlparse import urlparse
 from webbot.utils import utils
-from pprint import pprint
 import random, re
-
-
-# 错误重试
-class RetryMiddleware(retry.RetryMiddleware):
-
-    def __init__(self, settings):
-        retry.RetryMiddleware.__init__(self, settings)
-        self.EXCEPTIONS_TO_RETRY += (ResponseNeverReceived,)
-
 
 # 随机切换代理
 class ProxyMiddleware(object):
