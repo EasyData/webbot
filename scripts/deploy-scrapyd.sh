@@ -3,7 +3,7 @@
 
 # 安装程序
 
-pip install scrapy==0.18.4 scrapyd
+pip install scrapy==0.22.2 scrapyd
 
 # 用户群组
 
