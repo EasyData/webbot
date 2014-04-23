@@ -175,6 +175,9 @@ Webbot用户手册
             http://www.site.com/blog/index.html
             http://www.site.com/about/index.html
 
+    * `col`: 关键词字段号(0:整个关键词, 1:字段一, 2:字段二 ...)
+    * `sep`: 关键词分割符(默认为`null`)
+
 - `pages`: 自动翻页(当且仅当`rules`为空时, 该配置才有效). 例如:
 
         {
@@ -412,6 +415,7 @@ Webbot用户手册
     'SITE':     站点名称, 于`site`值一致
     'CONF':     配置文件内容
     'URL':      本页面链接(仅用于**fields** 字段定义, 不可在**rules**中使用)
+    'COLn':     COL0, COL1, COL2 ... (仅用于**fields** 字段定义, 不可在**rules**中使用)
 
 ## proxy
 

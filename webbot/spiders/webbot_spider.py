@@ -179,10 +179,12 @@ class WebbotSpider(MyCrawlSpider):
             self.build_mappings(conf.get('continue'), lvl+1)
 
     def make_requests_from_url(self, url):
+        kw = self.macro.query(url)
         us = urlparse.urlsplit(url)
         qstr = dict(urlparse.parse_qsl(us.query))
         base = urlparse.urlunsplit(us._replace(query=''))
-        return FormRequest(base, formdata=qstr, method=self.start_method, headers=self.headers, cookies=self.cookies, dont_filter=True)
+        meta = {'keyword':kw}
+        return FormRequest(base, formdata=qstr, method=self.start_method, headers=self.headers, cookies=self.cookies, dont_filter=True, meta=meta)
 
     def run_plugin(self, response):
         if response.meta.get('dirty')==False:
@@ -261,7 +263,7 @@ class WebbotSpider(MyCrawlSpider):
     def parse_html_item(self, response, loop, fields):
         meta = response.meta
         hxs = Selector(response)
-        self.macro.update({'URL':response.url})
+        self.macro.update({'URL':response.url, 'keyword':meta.get('keyword', '')})
 
         for e in hxs.xpath(loop or '(//*)[1]'):
             loader = ItemLoader(item=Item(), selector=e)

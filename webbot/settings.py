@@ -34,7 +34,9 @@ DOWNLOADER_MIDDLEWARES = {
     'webbot.middlewares.ProxyMiddleware': 999,
 }
 
-SPIDER_MIDDLEWARES = {}
+SPIDER_MIDDLEWARES = {
+    'webbot.middlewares.KeywordRelayMiddleware': 999,
+}
 
 WEBSERVICE_ENABLED = False
 TELNETCONSOLE_ENABLED = False

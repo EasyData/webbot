@@ -114,4 +114,17 @@ class DedupMiddleware(object):
     def spider_closed(self, spider, reason):
         pass
 
+# 关键词接力(spidermw)
+class KeywordRelayMiddleware(object):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def process_spider_output(self, response, result, spider):
+        kw = response.meta.get('keyword', '')
+        for request in result:
+            if isinstance(request, Request):
+                request.meta['keyword'] = kw
+            yield request
 

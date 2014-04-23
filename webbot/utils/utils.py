@@ -203,11 +203,17 @@ def generate_urls(obj, macro):
                 for kw in load_keywords(kw_obj):
                     key = kw_obj['name'].encode('utf-8')
                     val = kw.encode(kw_obj.get('enc', 'utf-8'), errors='ignore') if type(kw)==unicode else str(kw)
+                    col = kw_obj.get('col', 0)
+                    sep = kw_obj.get('sep')
+                    if col>0:
+                        val = val.split(sep)[col-1]
                     if kw_obj.get('query', True):
                         qstr.update({key:val})
                         url = base+'?'+urlencode(qstr)
                     else:
                         url = base.replace(key, val)+'?'+urlencode(qstr)
+                    macro.update({'sep':sep})
+                    macro.bind(url, kw)
                     yield url
             else:
                 url = base+'?'+urlencode(qstr)
@@ -339,8 +345,17 @@ def convert_type(infs):
 class MacroExpander(object):
 
     def __init__(self, env):
+        self.bindings = dict()
         self.macros = dict()
         self.macros.update(env)
+
+    def bind(self, url, kw):
+
+        self.bindings[url] = kw
+
+    def query(self, url):
+
+        return self.bindings.get(url, '')
 
     def update(self, env={}):
         now = datetime.now().replace(microsecond=0)
@@ -374,6 +389,17 @@ class MacroExpander(object):
     def expand(self, value, env={}):
         if type(value)!=str and type(value)!=unicode:
             return value
+
+        kw = self.macros.get('keyword', '')
+        sep = self.macros.get('sep')
+        for key,col in re.findall(r'\$\{(COL(\d+))\}', value):
+            col = int(col)
+            if col==0:
+                v = kw
+            else:
+                v = kw.split(sep)[col-1]
+            env[key] = v
+
         env = {k:v for k,v in env.iteritems() if k.isupper()}
         self.update()
         env.update(self.macros)
