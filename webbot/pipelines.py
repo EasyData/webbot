@@ -3,11 +3,14 @@
 
 from datetime import datetime
 from scrapy import log
+from scrapy.contrib.pipeline.images import ImagesPipeline
 from scrapy.exceptions import DropItem
-from scrapy.item import Item
+from scrapy.item import Item, Field
 from webbot.utils import utils
 import re, traceback
 
+
+# 字段映射(mapping)
 def item2post(item):
 
     post = {}
@@ -17,18 +20,27 @@ def item2post(item):
     return post
 
 
+# 基本处理(basic)
 class BasicPipeline(object):
 
+    def open_spider(self, spider):
+        self.img = 'image_urls' in Item.fields
+
     def process_item(self, item, spider):
+        if self.img:
+            item.fields['images'] = Field()
         try:
             for k,v in item.fields.iteritems():
-                if type(item[k])==list:
+                if self.img and k in ['images', 'image_urls']:
+                    pass
+                elif isinstance(item[k], list):
                     item[k] = item[k][0]
             return item
         except Exception as ex:
             raise DropItem('item error: {}'.format(ex))
 
 
+# 调试打印(debug)
 class DebugPipeline(object):
 
     def open_spider(self, spider):
@@ -176,4 +188,21 @@ class ZmqPipeline(object):
         if self.sender:
             log.msg('disconnect zmq')
             self.sender.term()
+
+
+# 图片下载(img)
+class ImgPipeline(ImagesPipeline):
+
+    def open_spider(self, spider):
+        self.img = 'image_urls' in Item.fields
+        self.spiderinfo = self.SpiderInfo(spider)
+        if hasattr(spider, 'img'):
+            self.store = self._get_store(spider.img)
+
+    def process_item(self, item, spider):
+
+        if self.img:
+            return ImagesPipeline.process_item(self, item, spider)
+        else:
+            return item
 

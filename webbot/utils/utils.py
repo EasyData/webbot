@@ -286,8 +286,11 @@ def convert_type(infs):
             elif t=='text':
                 return remove_tags(data).strip()
             elif t=='clean':
-                cleaner = Cleaner(style=True, scripts=True, javascript=True, links=True, meta=True)
-                return cleaner.clean_html(data)
+                try:
+                    cleaner = Cleaner(style=True, scripts=True, javascript=True, links=True, meta=True)
+                    return cleaner.clean_html(data)
+                except:
+                    return data
             elif t=='unesc':
                 return HTMLParser().unescape(data)
             elif t=='base64':

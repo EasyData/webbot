@@ -17,10 +17,11 @@ DEFAULT_REQUEST_HEADERS = {
 
 ITEM_PIPELINES = {
     'webbot.pipelines.BasicPipeline': 0,
-    'webbot.pipelines.DebugPipeline': 1,
-    'webbot.pipelines.MongoPipeline': 2,
-    'webbot.pipelines.MysqlPipeline': 3,
-    'webbot.pipelines.ZmqPipeline': 4,
+    'webbot.pipelines.MongoPipeline': 1,
+    'webbot.pipelines.MysqlPipeline': 2,
+    'webbot.pipelines.ZmqPipeline': 3,
+    'webbot.pipelines.ImgPipeline': 4,
+    'webbot.pipelines.DebugPipeline': 9,
 }
 
 EXTENSIONS = {

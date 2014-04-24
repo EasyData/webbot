@@ -1,11 +1,7 @@
 Webbot用户手册
 ==============
 
-## 爬虫列表
-
-- webbot(通用型)
-
-> 注意: 除此之外的爬虫, 已被废弃(或, 在开发中)!
+A simple webbot based on scrapy(0.22.2)
 
 ## 功能列表
 
@@ -17,6 +13,7 @@ Webbot用户手册
 - page(start/stop/step)
 - parse(int/float/date/utc/text/map)
 - plugin(python script)
+- ImageDownloader
 - filter(detetime-delta/regex/number-range)
 - database(mongo[automatically]/mysql[manually])
 - proxy(http)
@@ -298,7 +295,8 @@ Webbot用户手册
        clicks : 0
 
 **字段定义集**, 是由多个 **字段定义项**组成. 每个**字段定义项**由`字段名称`(值类型为`string`)和`字段定义`(值类型为`dict`)组成.
-其中, `字段定义`由下列元素组成:
+其中, `images_urls`是个特殊的`字段名称`, 它会启用**图片下载**模式;
+另外, `字段定义`由下列元素组成:
 
 - `name`, 数据库字段名称
     * 若无该字段, 则不会写入数据库, 并在**debug**模式下, 会在名称后打印`*`标识.
@@ -471,6 +469,7 @@ Webbot用户手册
     - `mongo`, MongoDB入库设置, 例如: `mongodb://hostname:27017/db_name.collection_name`
     - `zmq`, ZeroMQ消息队列设置, 例如: `tcp://hostname:10086`
     - `spider`, 指定爬虫类型, 例如: `jsonbot`
+    - `img`, 指定图片存储路径, 例如: `/tmp`
 
 录入新的mysql库前, 需要根据**fields**, 创建相对应的`db_name`以及`table_name`.
 参考SQL如下所示(请注意编码方式(`CHARSET`)):
