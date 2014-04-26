@@ -48,4 +48,4 @@ DEFAULT_LOGGER = None #'mongodb://localhost:27017/result.data'
 DEFAULT_DEDUP = None
 
 FEED_URI_PARAMS = 'webbot.utils.utils.feed_uri_params_parser'
-
+IMAGES_STORE = '/tmp'
