@@ -8,7 +8,7 @@ from lxml import etree, html
 from lxml.html.clean import Cleaner
 from random import randint
 from scrapy import log
-from scrapy.contrib.loader.processor import Compose, Join, TakeFirst
+from scrapy.contrib.loader.processor import *
 from scrapy.exceptions import CloseSpider
 from scrapy.utils.markup import remove_tags
 from scrapy.utils.url import canonicalize_url
@@ -341,8 +341,11 @@ def convert_type(infs):
                 return data
         return _convert
 
-    infs = infs if type(infs)==list else [infs]
-    return Compose(*[_wrapper(inf, inf.get('type', 'str')) for inf in infs])
+    if not infs:
+        return MapCompose(_wrapper({}, 'str'))
+    else:
+        infs = infs if type(infs)==list else [infs]
+        return Compose(*[_wrapper(inf, inf.get('type', 'str')) for inf in infs])
 
 
 class MacroExpander(object):
