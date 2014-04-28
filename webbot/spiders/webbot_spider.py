@@ -16,6 +16,7 @@ from urllib2 import urlparse
 from webbot import settings
 from webbot.spiders.mycrawl import MyCrawlSpider
 from webbot.utils import utils
+from webbot.utils import parser
 import Cookie
 import json
 import jsonpath
@@ -248,6 +249,7 @@ class WebbotSpider(MyCrawlSpider):
                     continue
 
                 val = utils.convert_type(v.get('parse', {}))(self.macro.expand(v_x))
+                #val = parser.make_parser(v.get('parse', {}))(self.macro.expand(v_x))
 
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'))
@@ -284,7 +286,8 @@ class WebbotSpider(MyCrawlSpider):
 
                 val = get_v_x(
                     self.macro.expand(v_x, meta),
-                    utils.convert_type(v.get('parse', {})),
+                    #utils.convert_type(v.get('parse', {})),
+                    parser.make_parser(v.get('parse', {})),
                     re=v.get('regex')
                 )
 
