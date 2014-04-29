@@ -569,3 +569,21 @@ A simple webbot based on scrapy(0.22.2)
         path = /home/spider
         read only = no
 
+## 编写配置文件
+
+    # 设置别名
+    $ vim ~/.bashrc
+
+        alias webbot='PYTHONPATH=~/github/webbot SCRAPY_SETTINGS_MODULE=webbot.settings scrapy crawl webbot -a debug=true -a tz=+08:00 -a'
+
+    # 加载别名
+    $ . ~/.bashrc
+
+    # 编辑配置
+    $ vim douban.conf
+
+        {...}
+
+    # 测试配置
+    $ webbot config=douban.conf
+
