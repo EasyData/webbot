@@ -6,7 +6,7 @@ from scrapy import log
 from scrapy.contrib.pipeline.images import ImagesPipeline
 from scrapy.exceptions import DropItem
 from scrapy.item import Item, Field
-from webbot.utils import utils
+from webbot.utils import utils, dateparser
 import re, traceback
 
 
@@ -27,11 +27,9 @@ class BasicPipeline(object):
         self.img = 'image_urls' in Item.fields
 
     def process_item(self, item, spider):
-        if self.img:
-            item.fields['images'] = Field()
         try:
             for k,v in item.fields.iteritems():
-                if self.img and k in ['images', 'image_urls']:
+                if v.get('multi'):
                     pass
                 elif isinstance(item[k], list):
                     item[k] = item[k][0]
@@ -65,7 +63,7 @@ class DebugPipeline(object):
                     colored = utils.R
                 else:
                     colored = lambda x:x
-                offset = utils.tz_offset(spider.tz)
+                offset = dateparser.tz_offset(spider.tz)
                 v = colored(v + offset)
             f = ' ' if 'name' in item.fields[k] else '*'
             print u'{:>10.10}{}: {}'.format(k, f, v).encode('utf-8')

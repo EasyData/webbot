@@ -163,9 +163,12 @@ class WebbotSpider(MyCrawlSpider):
             self.mappings = dict()
             for k,v in conf['fields'].iteritems():
                 Item.fields[k] = Field()
-                if 'name' in v:
-                    Item.fields[k]['name'] = v['name']
-                Item.fields[k]['upsert'] = v.get('upsert')
+                for i,j in v.iteritems():
+                    Item.fields[k][i] = j
+            if 'image_urls' in Item.fields:
+                Item.fields['images'] = Field()
+                Item.fields['images']['multi'] = True
+                Item.fields['image_urls']['multi'] = True
 
         loop = self.macro.expand(conf.get('loop', ''))
         if loop.startswith('css:'):
@@ -227,6 +230,7 @@ class WebbotSpider(MyCrawlSpider):
         except Exception as ex:
             log.msg(u'{}\n{}'.format(response.url, traceback.format_exc()))
 
+    # FIXME: this method doesn't work
     def parse_json_item(self, response, loop, fields):
         txt = utils.to_unicode(response.body)
         if hasattr(self, 'json_type') and self.json_type=='list':
@@ -248,8 +252,8 @@ class WebbotSpider(MyCrawlSpider):
                     log.msg(u'field [{}] should contains "value" or "jpath"'.format(k), level=log.WARNING)
                     continue
 
-                val = utils.convert_type(v.get('parse', {}))(self.macro.expand(v_x))
-                #val = parser.make_parser(v.get('parse', {}))(self.macro.expand(v_x))
+                #val = utils.convert_type(v.get('parse', {}))(self.macro.expand(v_x))
+                val = parser.make_parser(v.get('parse', {}))([self.macro.expand(v_x)])[0]
 
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'))
@@ -286,7 +290,6 @@ class WebbotSpider(MyCrawlSpider):
 
                 val = get_v_x(
                     self.macro.expand(v_x, meta),
-                    #utils.convert_type(v.get('parse', {})),
                     parser.make_parser(v.get('parse', {})),
                     re=v.get('regex')
                 )
