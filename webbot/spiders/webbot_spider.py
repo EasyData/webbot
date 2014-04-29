@@ -7,27 +7,28 @@ from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.exceptions import CloseSpider
-from scrapy.http import Request, FormRequest
+from scrapy.http import Request, FormRequest, HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.misc import arg_to_iter
 from urllib2 import urlparse
 from webbot import settings
-from webbot.spiders.mycrawl import MyCrawlSpider
-from webbot.utils import utils
 from webbot.utils import parser
+from webbot.utils import utils
 import Cookie
+import inspect
 import json
 import jsonpath
 import re
 import traceback
 
-class WebbotSpider(MyCrawlSpider):
+class WebbotSpider(CrawlSpider):
 
     name = 'webbot'
 
     def __init__(self, config=None, debug=None, verbose=0, **kwargs):
+
         super(WebbotSpider, self).__init__()
         self.config = config
         self.debug = debug
@@ -37,15 +38,19 @@ class WebbotSpider(MyCrawlSpider):
         self.debug_mode()
 
     def start_requests(self):
+
         self.log(u'loading config from <{}>:\n{}'.format(unicode(self.config, encoding='utf-8'),
             json.dumps(self.conf, indent=4, ensure_ascii=False, sort_keys=True)), level=log.INFO)
         for i in CrawlSpider.start_requests(self):
             yield i
 
     def debug_mode(self):
+
         if self.debug==None:
             return
+
         self.debug = str(self.debug).upper()=='TRUE'
+
         if self.debug:
             log.msg(utils.G(u'{:=^20}'.format(' DEBUG MODE ')))
             if hasattr(self, 'mongo'):
@@ -59,6 +64,7 @@ class WebbotSpider(MyCrawlSpider):
                 del self.zmq
 
     def load_config(self):
+
         conf = utils.load_cfg(self.config)
 
         #### debug
@@ -126,7 +132,7 @@ class WebbotSpider(MyCrawlSpider):
             self.make_page_extractor(conf.get('urls', []))
 
         ### mappings(loop/fields)
-        self.build_mappings(conf)
+        self.build_item(conf)
 
         ### proxy
         self.proxy = conf.get('proxy', {})
@@ -158,31 +164,26 @@ class WebbotSpider(MyCrawlSpider):
 
         return conf
 
-    def build_mappings(self, conf, lvl=0):
-        if lvl==0:
-            self.mappings = dict()
-            for k,v in conf['fields'].iteritems():
-                Item.fields[k] = Field()
-                for i,j in v.iteritems():
-                    Item.fields[k][i] = j
-            if 'image_urls' in Item.fields:
-                Item.fields['images'] = Field()
-                Item.fields['images']['multi'] = True
-                Item.fields['image_urls']['multi'] = True
+    def build_item(self, conf):
 
-        loop = self.macro.expand(conf.get('loop', ''))
-        if loop.startswith('css:'):
-            loop = self.tr.css_to_xpath(loop[len('css:'):])
+        self.fields = conf['fields']
 
-        self.mappings[lvl] = {
-            'loop': loop,
-            'fields': conf.get('fields')
-        }
+        for k,v in self.fields.iteritems():
+            Item.fields[k] = Field()
+            for i,j in v.iteritems():
+                Item.fields[k][i] = j
 
-        if 'continue' in conf:
-            self.build_mappings(conf.get('continue'), lvl+1)
+        if 'image_urls' in Item.fields:
+            Item.fields['images'] = Field()
+            Item.fields['images']['multi'] = True
+            Item.fields['image_urls']['multi'] = True
+
+        self.loop = self.macro.expand(conf.get('loop', ''))
+        if self.loop.startswith('css:'):
+            self.loop = self.tr.css_to_xpath(loop[len('css:'):])
 
     def make_requests_from_url(self, url):
+
         kw = self.macro.query(url)
         us = urlparse.urlsplit(url)
         qstr = dict(urlparse.parse_qsl(us.query))
@@ -191,6 +192,7 @@ class WebbotSpider(MyCrawlSpider):
         return FormRequest(base, formdata=qstr, method=self.start_method, headers=self.headers, cookies=self.cookies, dont_filter=True, meta=meta)
 
     def run_plugin(self, response):
+
         if response.meta.get('dirty')==False:
             return response.replace(url=response.meta.get('url', response.url))
         elif self.plugin:
@@ -210,28 +212,28 @@ class WebbotSpider(MyCrawlSpider):
             return response
 
     def parse_page(self, response):
+
         try:
+
             response = self.run_plugin(response)
+
             if isinstance(response, Request):
                 yield response
                 return
 
-            lvl = response.meta.get('level', 0)
-            mapping = self.mappings[lvl]
-            loop, fields = mapping['loop'], mapping['fields']
-
-            for item in self.parse_item(response, loop, fields):
-                yield self.maybe_continue(item, response)
+            for item in self.parse_item(response, self.loop, self.fields):
+                yield item
 
             if self.page_extractor:
                 for link in self.page_extractor.extract_links(response):
                     yield Request(link.url, meta=response.meta)
 
         except Exception as ex:
+
             log.msg(u'{}\n{}'.format(response.url, traceback.format_exc()))
 
-    # FIXME: this method doesn't work
     def parse_json_item(self, response, loop, fields):
+
         txt = utils.to_unicode(response.body)
         if hasattr(self, 'json_type') and self.json_type=='list':
             l, r = txt.find('['), txt.rfind(']')
@@ -241,6 +243,7 @@ class WebbotSpider(MyCrawlSpider):
         self.macro.update({'URL':response.url})
 
         for e in jsonpath.jsonpath(obj, loop or '$[]') or []:
+
             item = Item()
 
             for k,v in fields.iteritems():
@@ -252,29 +255,29 @@ class WebbotSpider(MyCrawlSpider):
                     log.msg(u'field [{}] should contains "value" or "jpath"'.format(k), level=log.WARNING)
                     continue
 
-                #val = utils.convert_type(v.get('parse', {}))(self.macro.expand(v_x))
-                val = parser.make_parser(v.get('parse', {}))([self.macro.expand(v_x)])[0]
+                val = parser.make_parser(v.get('parse', {}))([self.macro.expand(v_x)])
 
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'))
 
-                qry = v.get('filter', {})
-                if utils.filter_data(qry, val):
-                    item[k] = arg_to_iter(val)
-                else:
-                    break
+                item[k] = arg_to_iter(val)
+
             else:
+
                 yield item
 
     def parse_html_item(self, response, loop, fields):
+
         meta = response.meta
         hxs = Selector(response)
         self.macro.update({'URL':response.url, 'keyword':meta.get('keyword', '')})
 
         for e in hxs.xpath(loop or '(//*)[1]'):
+
             loader = ItemLoader(item=Item(), selector=e)
 
             for k,v in fields.iteritems():
+
                 if 'value' in v:
                     get_v_x = loader.get_value
                     v_x = v.get('value')
@@ -297,40 +300,14 @@ class WebbotSpider(MyCrawlSpider):
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'), meta)
 
-                qry = v.get('filter', {})
-                if utils.filter_data(qry, val):
-                    loader.add_value(k, val)
-                else:
-                    break
+                loader.add_value(k, val)
+
             else:
+
                 yield loader.load_item()
 
-    def maybe_continue(self, item, response):
-        meta = response.meta
-        item = self.update_item(meta.get('item', Item()), item)
-        lvl = meta.get('level', 0)
-        mapping = self.mappings[lvl]
-        fields = mapping['fields']
-        for k,v in fields.iteritems():
-            ps = v.get('parse', [{}])
-            if not isinstance(ps, list):
-                ps = [ps]
-            if ps[-1].get('type')=='continue':
-                url = item[k][0]
-                meta = {
-                    'level':lvl+1,
-                    'item':item
-                }
-                return Request(url, meta=meta, callback=self.parse_page, dont_filter=True)
-        return item
-
-    def update_item(self, origin, patch):
-        for k,v in patch.fields.iteritems():
-            if k in patch:
-                origin[k] = patch[k]
-        return origin
-
     def sub_links(self, sub):
+
         if not sub:
             return None
 
@@ -338,6 +315,7 @@ class WebbotSpider(MyCrawlSpider):
         to = sub.get('to')
 
         def _sub(links):
+
             new_links = []
             for i in links:
                 i.url = re.sub(frm, to, i.url)
@@ -363,6 +341,7 @@ class WebbotSpider(MyCrawlSpider):
 
     # TODO: should persistent accross session
     def make_headers(self, headers):
+
         headers = CaselessDict(headers)
         if 'user-agent' in headers:
             self.user_agent = headers.pop('user-agent')
@@ -370,6 +349,7 @@ class WebbotSpider(MyCrawlSpider):
         self.headers = headers
 
     def make_cookies(self, cookies):
+
         if type(cookies) == unicode:
             cookies = cookies.encode('utf-8')
         if type(cookies)==str:
@@ -381,8 +361,10 @@ class WebbotSpider(MyCrawlSpider):
         return cookies
 
     def make_page_extractor(self, obj):
+
         if type(obj)!=dict:
             return
+
         pages = obj.get('pages')
         if pages:
             regex = self.macro.expand(pages.get('regex'))
@@ -396,4 +378,36 @@ class WebbotSpider(MyCrawlSpider):
                 restrict_xpaths=xpath,
                 process_value=utils.first_n_pages(regex, pages)
             )
+
+    # HACK
+    def _requests_to_follow(self, response):
+
+        if not isinstance(response, HtmlResponse):
+            return
+
+        meta = {k:v for k,v in response.meta.iteritems() if k.isupper()}
+        seen = set()
+
+        for n, rule in enumerate(self._rules):
+
+            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
+            if links and rule.process_links:
+                links = rule.process_links(links)
+            seen = seen.union(links)
+
+            for link in links:
+
+                r = Request(url=link.url, callback=self._response_downloaded)
+                r.meta.update(rule=n, link_text=link.text)
+                r.meta.update(meta)
+
+                fun = rule.process_request
+                if not hasattr(fun, 'nargs'):
+                    fun.nargs = len(inspect.getargs(fun.func_code).args)
+                if fun.nargs==1:
+                    yield fun(r)
+                elif fun.nargs==2:
+                    yield fun(r, response)
+                else:
+                    raise Exception('too many arguments')
 
