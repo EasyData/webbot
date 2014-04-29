@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-try:
-    from twisted.web._newclient import ResponseNeverReceived
-except ImportError:
-    from scrapy.xlib.tx._newclient import ResponseNeverReceived
 from scrapy import signals, log
 from scrapy.contrib.downloadermiddleware import retry
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -29,13 +25,28 @@ class ProxyMiddleware(object):
 
     def spider_opened(self, spider):
         try:
-            self.enabled = spider.proxy.get('enabled', True)
+            if hasattr(spider, 'proxy'):
+                m = re.match(r'^(http://[.0-9]+:[0-9]+)(,(http://[.0-9]+:[0-9]+))*$', spider.proxy)
+                if m:
+                    proxy = {
+                        'list': spider.proxy.split(','),
+                        'rate': 1
+                    }
+                else:
+                    proxy = {
+                        'file': spider.proxy,
+                        'rate': 1
+                    }
+            else:
+                proxy = {'enabled':False}
+
+            self.enabled = proxy.get('enabled', True)
             if not self.enabled:
                 return
 
-            self.rate = spider.proxy.get('rate', 10)
+            self.rate = proxy.get('rate', 10)
 
-            for i in utils.load_keywords(spider.proxy, msg='proxies'):
+            for i in utils.load_keywords(proxy, msg='proxies'):
                 m = re.match(r'^(?P<prot>\S+)(\s+|://)(?P<host>\S+)(\s+|:)(?P<port>\S+)$', i)
                 if m:
                     self.proxy_list.append(m.groupdict())
@@ -75,7 +86,7 @@ class DedupMiddleware(object):
 
     def spider_opened(self, spider):
         if hasattr(spider, 'debug') and  spider.debug:
-            log.msg(utils.Y(u'disable dedup'), level=log.WARNING)
+            spider.disabled.append('dedup')
             self.enabled = False
             return
 

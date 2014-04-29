@@ -30,6 +30,7 @@ class WebbotSpider(CrawlSpider):
     def __init__(self, config=None, debug=None, verbose=0, **kwargs):
 
         super(WebbotSpider, self).__init__()
+        self.disabled = []
         self.config = config
         self.debug = debug
         self.verbose = int(verbose)
@@ -39,49 +40,51 @@ class WebbotSpider(CrawlSpider):
 
     def start_requests(self):
 
-        self.log(u'loading config from <{}>:\n{}'.format(unicode(self.config, encoding='utf-8'),
-            json.dumps(self.conf, indent=4, ensure_ascii=False, sort_keys=True)), level=log.INFO)
+        self.print_msg()
+
         for i in CrawlSpider.start_requests(self):
             yield i
 
     def debug_mode(self):
 
-        if self.debug==None:
+        self.debug = str(self.debug).upper()=='TRUE'
+        if not self.debug:
             return
 
-        self.debug = str(self.debug).upper()=='TRUE'
+        for db in ['mongo', 'mysql', 'zmq']:
+            if hasattr(self, db):
+                delattr(self, db)
+                self.disabled.append(db)
+
+    def print_msg(self):
 
         if self.debug:
-            log.msg(utils.G(u'{:=^20}'.format(' DEBUG MODE ')))
-            if hasattr(self, 'mongo'):
-                self.log(utils.Y(u'disable mongo'), level=log.WARNING)
-                del self.mongo
-            if hasattr(self, 'mysql'):
-                self.log(utils.Y('disable mysql'), level=log.WARNING)
-                del self.mysql
-            if hasattr(self, 'zmq'):
-                self.log(utils.Y(u'disable zmq'), level=log.WARNING)
-                del self.zmq
+            self.log(utils.G(u'{:=^20}'.format(' DEBUG MODE ')), level=log.WARNING)
+            for i in self.disabled:
+                self.log(utils.Y(u'disable {}'.format(i)), level=log.WARNING)
+
+        self.log(u'loading config from <{}>:\n{}'.format(unicode(self.config, encoding='utf-8'),
+            json.dumps(self.conf, indent=2, ensure_ascii=False, sort_keys=True)), level=log.INFO)
 
     def load_config(self):
 
         conf = utils.load_cfg(self.config)
 
-        #### debug
+        ### debug
         if self.debug==None:
             self.debug = conf.get('debug', False)
 
-        #### site
+        ### site
         self.site = conf.get('site', u'未知站点')
         self.macro = utils.MacroExpander({
             'SITE': self.site,
             'CONF': json.dumps(conf)
         })
 
-        #### allowed_domains
+        ### allowed_domains
         self.allowed_domains = conf.get('domains', [])
 
-        #### start_urls
+        ### start_urls
         urls = conf.get('urls', [])
         self.start_urls = utils.generate_urls(urls, self.macro)
         if isinstance(urls, dict):
@@ -93,7 +96,7 @@ class WebbotSpider(CrawlSpider):
             self.start_method = 'GET'
             self.make_headers({})
 
-        #### rules
+        ### rules
         self.tr = HTMLTranslator()
         self.rules = []
         self.page_extractor = None
@@ -134,17 +137,16 @@ class WebbotSpider(CrawlSpider):
         ### mappings(loop/fields)
         self.build_item(conf)
 
-        ### proxy
-        self.proxy = conf.get('proxy', {})
-
-        ### database
-        for db in ['mongo', 'mysql', 'zmq']:
-            if db in conf:
-                setattr(self, db, conf[db])
-
         ### settings
+        self.load_settings(conf)
+
+        return conf
+
+    def load_settings(self, conf):
+
         self.logger = settings.DEFAULT_LOGGER
         self.dedup = settings.DEFAULT_DEDUP
+
         for k,v in conf.get('settings', {}).iteritems():
             log.msg(utils.G('+SET {} = {}'.format(k, v)))
             setattr(self, k, v)
@@ -161,8 +163,6 @@ class WebbotSpider(CrawlSpider):
             self.plugin.spider = self
         else:
             self.plugin = None
-
-        return conf
 
     def build_item(self, conf):
 
@@ -214,7 +214,6 @@ class WebbotSpider(CrawlSpider):
     def parse_page(self, response):
 
         try:
-
             response = self.run_plugin(response)
 
             if isinstance(response, Request):

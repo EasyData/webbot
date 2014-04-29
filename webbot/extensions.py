@@ -21,14 +21,15 @@ class StatsPoster(object):
         return o
 
     def spider_opened(self, spider):
-        pass
+        if hasattr(spider, 'debug') and spider.debug:
+            spider.disabled.append('logger')
+            self.enabled = False
+            return
+        else:
+            self.enabled = True
 
     def spider_closed(self, spider, reason):
-        if hasattr(spider, 'debug') and spider.debug:
-            log.msg(utils.Y(u'disable logger'), level=log.WARNING)
-            return
-
-        if hasattr(spider, 'logger'):
+        if self.enabled and hasattr(spider, 'logger'):
             try:
                 from pymongo import uri_parser, MongoClient
                 uri = spider.logger

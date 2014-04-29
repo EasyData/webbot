@@ -295,8 +295,7 @@ A simple webbot based on scrapy(0.22.2)
        clicks : 0
 
 **字段定义集**, 是由多个 **字段定义项**组成. 每个**字段定义项**由`字段名称`(值类型为`string`)和`字段定义`(值类型为`dict`)组成.
-其中, `images_urls`是个特殊的`字段名称`, 它会启用**图片下载**模式;
-另外, `字段定义`由下列元素组成:
+其中, `images_urls`是个特殊的`字段名称`, 它会启用**图片下载**模式; `字段定义`由下列元素组成:
 
 - `name`, 数据库字段名称
     * 若无该字段, 则不会写入数据库, 并在**debug**模式下, 会在名称后打印`*`标识.
@@ -367,6 +366,11 @@ A simple webbot based on scrapy(0.22.2)
             # 首先使用`jpath`提取字符串, 并指定它为`cst`时间
             "parse": [{"type":"jpath", "query":"$.content.date"}, {"type":"cst"}]
 
+    * 当指定类型的parser无额外参数, 可以简写:
+
+            # 首先使用`jpath`提取字符串, 并指定它为`cst`时间
+            "parse": [{"type":"jpath", "query":"$.content.date"}, "cst"]
+
 - `upsert`, 更新/插入模式切换, 值类型为`bool`, 默认值为`false`. (仅用于`mongo`入库)
 
     * 当其值为`true`时, 使用`mongo-upsert`方式入库
@@ -374,7 +378,7 @@ A simple webbot based on scrapy(0.22.2)
 
 - `multi`, 多值模式, 值类型为`bool`, 默认值为`false`.
 
-    * 当其值为`true`时, 该字段的值为`list`
+    * 当其值为`true`时, 该字段的值为`list`(不能进行mysql入库)
     * 当其值为`false`时, 该字段的值为`string`
 
 另外, **rules** 以及 **fields** 中的`value`及`xpath`中可以嵌入变量(形如, `${VARNAME}`), 目前支持下列变量:
@@ -406,36 +410,6 @@ A simple webbot based on scrapy(0.22.2)
     'URL':      本页面链接(仅用于**fields** 字段定义, 不可在**rules**中使用)
     'COLn':     COL0, COL1, COL2 ... (仅用于**fields** 字段定义, 不可在**rules**中使用)
 
-## proxy
-
-**代理设置**, 值类型为`dict`. 例如:
-
-    "proxy": {
-        "enabled" : true,
-        "rate"    : 5,
-        "file"    : "http://192.168.3.155/proxy.txt",
-        "list"    : [
-                      "http://1.2.3.4:5678",
-                      "http://8.7.6.5:4321"
-                    ]
-    }
-
-由下列元素组成:
-
-- `enabled`, 是否生效, 值类型为`bool`, 默认值为`true`.
-- `rate`, 代理变化频率, 值类型为`int`, 默认值为`10`(表示: 每10次HTTP请求, 就随机切换代理).
-- `file`, 代理列表文件, 值类型为`string`, 可以使用本地或网络路径, 编码方式必须是`UTF-8`.
-
-        # 由3个字段组成(prot/host/port), 它们之间用空白符(如, `tab`)分隔
-        http    218.29.218.10   6666
-        http    122.96.59.103   80
-        http    61.136.93.38    8080
-
-- `list`, 固定代理列表, 值类型为`list`, 默认值为`[]`, 由形如`prot://host:port`的代理地址组成:
-    * `prot`, 协议类型, 如`http`, `https`, `socks5`, `socks4`等(只支持`http`)
-    * `host`, 主机名(或IP地址)
-    * `port`, 端口号
-
 ## debug
 
 **调试模式**, 值类型为`bool`, 默认值为`false`. 当值为`true`时, 程序运行过程中, 会把采集到的item详情输出到屏幕.
@@ -449,7 +423,8 @@ A simple webbot based on scrapy(0.22.2)
         "download_timeout": 30,
         "download_delay": 5,
         "plugin: "/home/spider/configs/plugins/foobar.py",
-        "mysql": "mysql://user:passwd@hostname/db_name.table_name"
+        "mysql": "mysql://user:passwd@hostname/db_name.table_name",
+        "proxy": "http://1.2.3.4:8080,http://4.3.2.1:1080"
     }
     
     - `user_agent`, 浏览器型号
@@ -461,6 +436,13 @@ A simple webbot based on scrapy(0.22.2)
     - `zmq`, ZeroMQ消息队列设置, 例如: `tcp://hostname:10086`
     - `spider`, 指定爬虫类型, 例如: `jsonbot`
     - `img`, 指定图片存储路径, 例如: `/tmp`
+    - `proxy`, 代理文件路径/代理列表(逗号分割)
+
+            # 代理文件示例
+            # 由3个字段组成(prot/host/port), 它们之间用空白符(如, `tab`)分隔
+            http    218.29.218.10   6666
+            http    122.96.59.103   80
+            http    61.136.93.38    8080
 
 录入新的mysql库前, 需要根据**fields**, 创建相对应的`db_name`以及`table_name`.
 参考SQL如下所示(请注意编码方式(`CHARSET`)):
