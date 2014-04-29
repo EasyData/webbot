@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from dateparser import parse_date
 from HTMLParser import HTMLParser
 from functools import partial
 from jsonpath import jsonpath
 from lxml import html
 from lxml.html.clean import Cleaner
+from scrapy import log
 from scrapy.contrib.loader.processor import *
 from scrapy.utils.markup import remove_tags
 import base64
@@ -14,6 +14,11 @@ import inspect
 import re
 import requests
 import sys
+
+try:
+    from webbot.utils.dateparser import parse_date
+except:
+    pass
 
 try:
     import simplejson as json
@@ -34,6 +39,30 @@ class BaseParser(object):
     def __call__(self, data):
 
         return MapCompose(self.parse)(data)
+
+class HeadParser(BaseParser):
+
+    def __call__(self, data):
+
+        return data[:1]
+
+class TailParser(BaseParser):
+
+    def __call__(self, data):
+
+        return data[1:]
+
+class LastParser(BaseParser):
+
+    def __call__(self, data):
+
+        return data[-1:]
+
+class LenParser(BaseParser):
+
+    def __call__(self, data):
+
+        return len(data)
 
 class JoinParser(BaseParser):
 
@@ -97,17 +126,23 @@ class FloatParser(BaseParser):
 
     def parse(self, data):
 
-        data = data.replace(',', '')
-        data = re.search(r'[.0-9]+', data).group(0)
-        return float(data)
+        try:
+            data = data.replace(',', '')
+            data = re.search(r'[.0-9]+', data).group(0)
+            return float(data)
+        except:
+            return 0.0
 
 class IntParser(BaseParser):
 
     def parse(self, data):
 
-        data = data.replace(',', '')
-        data = re.search(r'[.0-9]+', data).group(0)
-        return int(data)
+        try:
+            data = data.replace(',', '')
+            data = re.search(r'[.0-9]+', data).group(0)
+            return int(data)
+        except:
+            return 0
 
 class UnescParser(BaseParser):
 
@@ -174,8 +209,10 @@ class FilterParser(BaseParser):
         return [i for i in data if self.filter(i)]
 
     def filter(self, data):
-        for k,v in self.inf['query'].iteritems():
-            if k=='delta':
+        for k,v in self.inf.iteritems():
+            if k=='type':
+                continue
+            elif k=='delta':
                 now = datetime.utcnow()
                 if not (type(data)==datetime and (now-data).total_seconds()<v):
                     return False
@@ -189,8 +226,8 @@ class FilterParser(BaseParser):
                 if data>v:
                     return False
             else:
-                log.msg(u'invalid query <{}>'.format(query), level=log.WARNING)
-                return False
+                log.msg(u'invalid operator <{}>'.format(k), level=log.WARNING)
+                continue
         return True
 
 class CompParser(BaseParser):
@@ -198,9 +235,11 @@ class CompParser(BaseParser):
     def __init__(self, inf):
 
         super(CompParser, self).__init__(inf)
+        self.parsers = [make_parser(i) for i in self.inf]
+        self.func = Compose(*self.parsers)
 
     def __call__(self, data):
-        return Compose(*[make_parser(i) for i in self.inf])(data)
+        return self.func(data)
 
 all_parsers = {
     cname[0:-6].lower():cls\
@@ -212,14 +251,16 @@ def make_parser(inf):
 
     if isinstance(inf, list):
         return CompParser(inf)
+    elif isinstance(inf, str) or isinstance(inf, unicode):
+        return make_parser({'type':inf})
     else:
         Parser = all_parsers.get(inf.get('type'), BaseParser)
         return Parser(inf)
 
 if __name__=='__main__':
 
-    data = ['<script>hello</script><p>   fffoooo  </p>', 'b<i>bb</i>bb', 'foobarfoobar', u'今天', u'昨天']
-    inf = [{'type':'cst'}, {'type':'text'}, {'type':'filter', 'query':{'match': ':'}}, {'type':'join'}]
+    data = ['<script>hello</script><p>   fff:oooo  </p>', 'b<i>bb</i>bb', 'foobar808foobar', u'今天::333', u'昨天']
+    inf = [u'text', 'int', {'type':'filter', 'min':500}, 'head']
     parser = make_parser(inf)
     print data
     print parser(data)

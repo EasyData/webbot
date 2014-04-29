@@ -355,36 +355,27 @@ A simple webbot based on scrapy(0.22.2)
                 - `tz`, 时区, 值类型为`string`, 默认值为`+00:00`(即, UTC时间). 注意: 当涉及到相对时间计算时, 需要指定`tz`.
             * `cst`, CST(China Standard Time)日期 (`{"type":"cst"}`等价于`{"type:"date", "tz":"+08:00"}`), 为中国大陆用户量身定做
                 - `fmt`, 日期格式, 值类型为`string`, 默认值为`auto`.
-            * `continue`, 继续解析. 解析结果必须是个url, 自动下载该url, 并继续解析:
+            * `filter`, 过滤(若有多个判断, 须同时满足)
+                - `delta`, 最大时间差(单位: `秒`), 只能用于过滤`datetime`类型的字段(使用UTC时间进行比较)
+                - `match`, 字符串匹配, 只能用于过滤`string`类型的字段
+                - `min`, 最大数值, 只能用于过滤`number`类型的字段
+                - `max`, 最小数值, 只能用于过滤`number`类型的字段
 
-                    {
-                        "fields": {
-                            "url": {"name":"url",       "value":"${URL}"},
-                            "txt": {"name":"content",   "xpath":"//iframe[@id='content']/@src", "parse":{"type":"continue"}}
-                        },
-
-                        "continue": {
-                            "fields": {
-                                "txt": {"name":"content",   "xpath":"//div[@class='content']", "parse":{"type":"text"}}
-                            }
-                        }
-                    }
 
     * 当值类型为`list`时, 会按先后顺序, 依次进行数据变换. 例如:
     
             # 首先使用`jpath`提取字符串, 并指定它为`cst`时间
             "parse": [{"type":"jpath", "query":"$.content.date"}, {"type":"cst"}]
 
-- `filter`, filter表达式(后于`parse`执行), 值类型为`dict`, 默认值为`{}`. 其中, 键取值范围如下:
-    * `delta`, 最大时间差(单位: `秒`), 只能用于过滤`datetime`类型的字段(使用UTC时间进行比较)
-    * `match`, 字符串匹配, 只能用于过滤`string`类型的字段
-    * `min`, 最大数值, 只能用于过滤`number`类型的字段
-    * `max`, 最小数值, 只能用于过滤`number`类型的字段
-
 - `upsert`, 更新/插入模式切换, 值类型为`bool`, 默认值为`false`. (仅用于`mongo`入库)
 
     * 当其值为`true`时, 使用`mongo-upsert`方式入库
     * 当其值为`false`时, 使用`mongo-insert`方式入库
+
+- `multi`, 多值模式, 值类型为`bool`, 默认值为`false`.
+
+    * 当其值为`true`时, 该字段的值为`list`
+    * 当其值为`false`时, 该字段的值为`string`
 
 另外, **rules** 以及 **fields** 中的`value`及`xpath`中可以嵌入变量(形如, `${VARNAME}`), 目前支持下列变量:
 
