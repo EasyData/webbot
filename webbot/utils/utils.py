@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+from .dateparser import parse_date
 from HTMLParser import HTMLParser
 from chardet import detect
 from datetime import datetime, timedelta
@@ -14,8 +15,20 @@ from scrapy.utils.markup import remove_tags
 from scrapy.utils.url import canonicalize_url
 from urllib import urlencode
 from urllib2 import urlopen, urlparse
-from .dateparser import parse_date
-import os.path, codecs, re, json, jsonpath, string, base64, time, hashlib, imp, tempfile, zlib
+import base64
+import codecs
+import hashlib
+import imp
+import json
+import jsonpath
+import os.path
+import pprint
+import re
+import string
+import tempfile
+import time
+import unicodedata
+import zlib
 
 try:
     from cPickle import pickle
@@ -266,88 +279,39 @@ def load_keywords(kw_obj, msg='keywords'):
 
     return keywords
 
-def _convert_type(infs):
-    def _wrapper(inf, t):
-        def _convert(data):
-            if t not in ['join', 'list'] and isinstance(data, list):
-                data = TakeFirst()(data)
-                if type(data) in [str, unicode]:
-                    data = data.strip()
-                elif type(data) in [int, float, datetime]:
-                    data = str(data)
-                else:
-                    return data
+class UnicodePrinter(pprint.PrettyPrinter):
 
-            if t=='join':
-                sep = inf.get('sep', u' ')
-                return Join(sep)(data)
-            elif t=='list':
-                sep = inf.get('sep', u' ')
-                return remove_tags(Join(sep)(data)).strip()
-            elif t=='text':
-                return remove_tags(data).strip()
-            elif t=='clean':
-                try:
-                    cleaner = Cleaner(style=True, scripts=True, javascript=True, links=True, meta=True)
-                    return cleaner.clean_html(data)
-                except:
-                    return data
-            elif t=='unesc':
-                return HTMLParser().unescape(data)
-            elif t=='base64':
-                return base64.decodestring(data)
-            elif t=='sub':
-                frm = inf.get('from')
-                to = inf.get('to')
-                return re.sub(frm, to, data)
-            elif t=='jpath':
-                qs = inf.get('query')
-                return jsonpath.jsonpath(json.loads(data), qs)
-            elif t=='xpath':
-                qs = inf.get('query')
-                dom = html.fromstring(data)
-                return dom.xpath(qs)
-            elif t=='map':
-                m = inf.get('map')
-                d = inf.get('default')
-                return m.get(data, d)
-            elif t=='int':
-                data = data.replace(',', '')
-                data = re.search(r'[0-9]+', data).group(0)
-                return int(data)
-            elif t=='float':
-                data = data.replace(',', '')
-                data = re.search(r'[.0-9]+', data).group(0)
-                return float(data)
-            elif t=='date':
-                fmt = inf.get('fmt', 'auto')
-                tz = inf.get('tz', '+00:00')
-                return parse_date(data, fmt, tz)
-            elif t=='cst':
-                fmt = inf.get('fmt', 'auto')
-                return parse_date(data, fmt, '+08:00')
-            elif t=='http':
-                import requests
-                url = data
-                m = inf.get('method', 'get').upper()
-                d = inf.get('data', {})
-                e = inf.get('enc', 'utf-8')
-                if m=='GET':
-                    return requests.get(url).content.decode(e)
-                elif m=='POST':
-                    return requests.get(url, data=d).content.decode(e)
-                else:
-                    return data
-            else:
-                return data
-        return _convert
+    def __init__(self, indent=1, width=80, depth=None, stream=None, verbose=0):
+        pprint.PrettyPrinter.__init__(self, indent, width, depth, stream)
+        self.verbose = verbose
 
-    if not infs:
-        return MapCompose(_wrapper({}, 'str'))
-    else:
-        infs = infs if type(infs)==list else [infs]
-        return Compose(*[_wrapper(inf, inf.get('type', 'str')) for inf in infs])
+    def width(self, string):
+        return sum(1+(unicodedata.east_asian_width(c) in 'WF') for c in string)
 
+    def truncate(self, string, width):
+        width = max(0, width if width>=0 else len(string)+width)
+        i = 0
+        s = u''
+        for c in string:
+            s += c
+            i += unicodedata.east_asian_width(c) in 'WF'
+            i += 1
+            if i>width:
+                break
+        return s
+
+    def squeeze(self, string, width=74):
+        if self.width(string)>width:
+            string = u'{} {} {}'.format(self.truncate(string, 60), B(u'……'), self.truncate(string, 14))
+        return string
+
+    def format(self, obj, context, maxlevels, level):
+        if isinstance(obj, unicode):
+            v = obj
+            if self.verbose<3:
+                v = self.squeeze(v)
+            return ('"%s"'%v.encode('utf8'), True, False)
+        return pprint.PrettyPrinter.format(self, obj, context, maxlevels, level)
 
 class MacroExpander(object):
 

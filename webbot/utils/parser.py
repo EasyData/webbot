@@ -202,6 +202,11 @@ class StrParser(BaseParser):
         if type(data) in [str, unicode]:
             return data.strip()
 
+class TrimParser(BaseParser):
+
+    def parse(self, data):
+        return data.strip()
+
 class FilterParser(BaseParser):
 
     def __call__(self, data):

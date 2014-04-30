@@ -2,13 +2,14 @@
 # -*- encoding: utf-8 -*-
 
 from datetime import datetime
-from pprint import pformat
 from scrapy import log
 from scrapy.contrib.pipeline.images import ImagesPipeline
 from scrapy.exceptions import DropItem
 from scrapy.item import Item, Field
 from webbot.utils import utils, dateparser
-import re, traceback
+import pprint
+import re
+import traceback
 
 
 # 字段映射(mapping)
@@ -43,6 +44,8 @@ class BasicPipeline(object):
 class DebugPipeline(object):
 
     def open_spider(self, spider):
+
+        self.printer = utils.UnicodePrinter(spider.verbose)
         self.idx = 0
 
     def process_item(self, item, spider):
@@ -54,8 +57,8 @@ class DebugPipeline(object):
         for k,v in item.iteritems():
             if type(v) in [str, unicode]:
                 v = re.sub(r'\s{2,}', ' ', v.replace('\n', ' ').replace('\r', ''))
-                if spider.verbose<3 and len(v)>74:
-                    v = u'{} {} {}'.format(v[:60].strip(), utils.B(u'……'), v[-14:].strip())
+                if spider.verbose<3:
+                    v = self.printer.squeeze(v)
             elif type(v)==datetime:
                 now = datetime.utcnow()
                 if v>now:
@@ -67,7 +70,7 @@ class DebugPipeline(object):
                 offset = dateparser.tz_offset(spider.tz)
                 v = colored(v + offset)
             else:
-                v = re.sub(r'(?m)^', '{: ^13}'.format(''), pformat(v)).strip()
+                v = re.sub(r'(?m)^', '{: ^13}'.format(''), self.printer.pformat(v)).decode('utf-8').strip()
             f = ' ' if 'name' in item.fields[k] else '*'
             print u'{:>10.10}{}: {}'.format(k, f, v).encode('utf-8')
 
