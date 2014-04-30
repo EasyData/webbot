@@ -42,6 +42,12 @@ class BaseParser(object):
 
         return flatten(MapCompose(self.parse)(data))
 
+class GrepParser(BaseParser):
+
+    def parse(self, data):
+
+        return re.findall(self.inf.get('pattern', '.+'), data)
+
 class HeadParser(BaseParser):
 
     def __call__(self, data):

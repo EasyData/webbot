@@ -21,6 +21,7 @@ import hashlib
 import imp
 import json
 import jsonpath
+import math
 import os.path
 import pprint
 import re
@@ -289,20 +290,19 @@ class UnicodePrinter(pprint.PrettyPrinter):
         return sum(1+(unicodedata.east_asian_width(c) in 'WF') for c in string)
 
     def truncate(self, string, width):
-        width = max(0, width if width>=0 else len(string)+width)
         i = 0
         s = u''
-        for c in string:
-            s += c
+        for c in string[::-1]:
+            s = s+c if width>0 else c+s
             i += unicodedata.east_asian_width(c) in 'WF'
             i += 1
-            if i>width:
+            if i>math.fabs(width):
                 break
         return s
 
     def squeeze(self, string, width=74):
         if self.width(string)>width:
-            string = u'{} {} {}'.format(self.truncate(string, 60), B(u'……'), self.truncate(string, 14))
+            string = u'{} {} {}'.format(self.truncate(string, 60), B(u'……'), self.truncate(string, -14))
         return string
 
     def format(self, obj, context, maxlevels, level):
