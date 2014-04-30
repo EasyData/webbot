@@ -45,7 +45,7 @@ class DebugPipeline(object):
 
     def open_spider(self, spider):
 
-        self.printer = utils.UnicodePrinter(spider.verbose)
+        self.printer = utils.UnicodePrinter(getattr(spider, 'verbose', 0))
         self.idx = 0
 
     def process_item(self, item, spider):

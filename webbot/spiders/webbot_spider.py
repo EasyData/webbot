@@ -30,6 +30,10 @@ class WebbotSpider(CrawlSpider):
     def __init__(self, config=None, debug=None, verbose=0, **kwargs):
 
         super(WebbotSpider, self).__init__()
+
+        if not config:
+            return
+
         self.disabled = []
         self.config = config
         self.debug = debug
