@@ -9,6 +9,8 @@ from lxml.html.clean import Cleaner
 from scrapy import log
 from scrapy.contrib.loader.processor import *
 from scrapy.utils.markup import remove_tags
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.python import flatten
 import base64
 import inspect
 import re
@@ -38,7 +40,7 @@ class BaseParser(object):
     
     def __call__(self, data):
 
-        return MapCompose(self.parse)(data)
+        return flatten(MapCompose(self.parse)(data))
 
 class HeadParser(BaseParser):
 
@@ -185,9 +187,14 @@ class SubParser(BaseParser):
     def __init__(self, inf):
 
         super(SubParser, self).__init__(inf)
-        fm = self.inf['from']
-        to  = self.inf['to']
-        self.parse = partial(re.sub, fm, to)
+        self.fm = self.inf['from']
+        self.to  = arg_to_iter(self.inf['to'])
+        #self.parse = partial(re.sub, fm, to)
+
+    def parse(self, data):
+
+        for to in self.to:
+            yield re.sub(self.fm, to, data)
 
 class TextParser(BaseParser):
 
