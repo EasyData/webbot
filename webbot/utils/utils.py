@@ -429,48 +429,6 @@ def get_ipaddr(ifname):
     except Exception as ex:
         return '0.0.0.0'
 
-def register_xpath_functions():
-
-    def get_text(es):
-        if type(es)==list:
-            if len(es)>0:
-                e = es[0]
-            else:
-                return False, None
-        else:
-            e = es
-
-        if type(e)==etree._Element:
-            txt = etree.tostring(e, method='text', encoding=unicode)
-        elif type(e) in [str, unicode, etree._ElementStringResult, etree._ElementUnicodeResult]:
-            txt = e
-        else:
-            return False, None
-
-        return True, txt
-
-    def datetime_delta(ctx, es, tz, delta):
-        ok, txt = get_text(es)
-        if ok:
-            now = datetime.utcnow()
-            dt = parse_date(txt, 'auto', tz)
-            return (now-dt).total_seconds() < delta
-        else:
-            return False
-
-    def unixtime_delta(ctx, es, delta):
-        ok, txt = get_text(es)
-        if ok:
-            now = time.time()
-            dt = float(txt)
-            return now-dt < delta
-        else:
-            return False
-
-    ns = etree.FunctionNamespace(None)
-    ns['datetime-delta'] = datetime_delta
-    ns['unixtime-delta'] = unixtime_delta
-
 def register_xpath_namespaces():
     fns = {
             'date':'http://exslt.org/dates-and-times',
@@ -486,6 +444,5 @@ def register_xpath_namespaces():
     for k,v in fns.iteritems():
         etree.FunctionNamespace(v).prefix = k
 
-register_xpath_functions()
 register_xpath_namespaces()
 
