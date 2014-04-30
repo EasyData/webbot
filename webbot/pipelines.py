@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 from datetime import datetime
+from pprint import pformat
 from scrapy import log
 from scrapy.contrib.pipeline.images import ImagesPipeline
 from scrapy.exceptions import DropItem
@@ -49,7 +50,7 @@ class DebugPipeline(object):
             return item
 
         self.idx += 1
-        print utils.B('{:=^30}'.format(self.idx))
+        print utils.B('{:=^30}').format(self.idx)
         for k,v in item.iteritems():
             if type(v) in [str, unicode]:
                 v = re.sub(r'\s{2,}', ' ', v.replace('\n', ' ').replace('\r', ''))
@@ -65,6 +66,8 @@ class DebugPipeline(object):
                     colored = lambda x:x
                 offset = dateparser.tz_offset(spider.tz)
                 v = colored(v + offset)
+            else:
+                v = re.sub(r'(?m)^', '{: ^13}'.format(''), pformat(v)).strip()
             f = ' ' if 'name' in item.fields[k] else '*'
             print u'{:>10.10}{}: {}'.format(k, f, v).encode('utf-8')
 
@@ -140,11 +143,16 @@ class MysqlPipeline(object):
                 for k,v in post.iteritems():
                     fields.append(k)
                     values.append(v)
-                self.cur.execute("""INSERT INTO {}({}) VALUES({});""".format(
-                                                                                self.tbl,
-                                                                                ','.join(fields),
-                                                                                ','.join(['%s']*len(fields))
-                                                                            ), values)
+
+                self.cur.execute(
+                    """INSERT INTO {}({}) VALUES({});""".format(
+                        self.tbl,
+                        ','.join(fields),
+                        ','.join(['%s']*len(fields))
+                    ),
+                    values
+                )
+
                 self.cnn.commit()
             except Exception as ex:
                 traceback.print_exc()
@@ -192,6 +200,7 @@ class ZmqPipeline(object):
 class ImgPipeline(ImagesPipeline):
 
     def open_spider(self, spider):
+
         self.img = 'image_urls' in Item.fields
         self.spiderinfo = self.SpiderInfo(spider)
         if hasattr(spider, 'img'):
@@ -203,4 +212,10 @@ class ImgPipeline(ImagesPipeline):
             return ImagesPipeline.process_item(self, item, spider)
         else:
             return item
+
+    def get_media_requests(self, item, info):
+
+        for r in ImagesPipeline.get_media_requests(self, item, info):
+            r.headers['Referer'] = item.get('url', 'http://www.google.com')
+            yield r
 
