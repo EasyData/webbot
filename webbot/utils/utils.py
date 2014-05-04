@@ -292,12 +292,16 @@ class UnicodePrinter(pprint.PrettyPrinter):
     def truncate(self, string, width):
         i = 0
         s = u''
-        for c in string[::-1]:
-            s = s+c if width>0 else c+s
+        if width<0:
+            string = string[::-1]
+        for c in string:
+            s += c
             i += unicodedata.east_asian_width(c) in 'WF'
             i += 1
             if i>math.fabs(width):
                 break
+        if width<0:
+            s = s[::-1]
         return s
 
     def squeeze(self, string, width=74):
