@@ -31,7 +31,8 @@ class BasicPipeline(object):
         try:
             for k,v in item.fields.iteritems():
                 if v.get('multi'):
-                    pass
+                    if k not in item:
+                        item[k] = []
                 elif isinstance(item[k], list):
                     item[k] = item[k][0]
             return item
