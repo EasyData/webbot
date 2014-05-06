@@ -20,9 +20,14 @@ ITEM_PIPELINES = {
     'webbot.pipelines.MongoPipeline': 1,
     'webbot.pipelines.MysqlPipeline': 2,
     'webbot.pipelines.ZmqPipeline': 3,
-    'webbot.pipelines.ImgPipeline': 4,
     'webbot.pipelines.DebugPipeline': 9,
 }
+
+try:
+    from scrapy.contrib.pipeline.images import ImagesPipeline
+    ITEM_PIPELINES['webbot.pipelines.ImgPipeline'] = 4
+except:
+    pass
 
 EXTENSIONS = {
     'scrapy.webservice.WebService': None,

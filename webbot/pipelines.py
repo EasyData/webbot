@@ -3,7 +3,6 @@
 
 from datetime import datetime
 from scrapy import log
-from scrapy.contrib.pipeline.images import ImagesPipeline
 from scrapy.exceptions import DropItem
 from scrapy.item import Item, Field
 from webbot.utils import utils, dateparser
@@ -200,25 +199,32 @@ class ZmqPipeline(object):
 
 
 # 图片下载(img)
-class ImgPipeline(ImagesPipeline):
+try:
 
-    def open_spider(self, spider):
+    from scrapy.contrib.pipeline.images import ImagesPipeline
 
-        self.img = 'image_urls' in Item.fields
-        self.spiderinfo = self.SpiderInfo(spider)
-        if hasattr(spider, 'img'):
-            self.store = self._get_store(spider.img)
+    class ImgPipeline(ImagesPipeline):
 
-    def process_item(self, item, spider):
+        def open_spider(self, spider):
 
-        if self.img:
-            return ImagesPipeline.process_item(self, item, spider)
-        else:
-            return item
+            self.img = 'image_urls' in Item.fields
+            self.spiderinfo = self.SpiderInfo(spider)
+            if hasattr(spider, 'img'):
+                self.store = self._get_store(spider.img)
 
-    def get_media_requests(self, item, info):
+        def process_item(self, item, spider):
 
-        for r in ImagesPipeline.get_media_requests(self, item, info):
-            r.headers['Referer'] = item.get('url', 'http://www.google.com')
-            yield r
+            if self.img:
+                return ImagesPipeline.process_item(self, item, spider)
+            else:
+                return item
+
+        def get_media_requests(self, item, info):
+
+            for r in ImagesPipeline.get_media_requests(self, item, info):
+                r.headers['Referer'] = item.get('url', 'http://www.google.com')
+                yield r
+except:
+
+    pass
 
