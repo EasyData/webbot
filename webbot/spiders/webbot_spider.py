@@ -301,7 +301,10 @@ class WebbotSpider(CrawlSpider):
                 )
 
                 if not val and 'default' in v:
-                    val = self.macro.expand(v.get('default'), meta)
+                    val = arg_to_iter(self.macro.expand(v.get('default'), meta))
+
+                if not val and 'multi' not in v:
+                    break
 
                 loader.add_value(k, val)
 

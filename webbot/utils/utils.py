@@ -188,7 +188,7 @@ def load_db(uri):
         yield word
 
 def load_cfg(path):
-    cfg = json.loads('\n'.join(load_file(path)))
+    cfg = json.loads(''.join(load_file(path)))
     if 'base' in cfg:
         cfg = dict(load_cfg(cfg['base']).items()+cfg.items())
         del cfg['base']
@@ -196,7 +196,7 @@ def load_cfg(path):
 
 def load_plugin(path):
     fd, fn = tempfile.mkstemp()
-    os.write(fd, '\n'.join(load_file(path)).encode('utf-8'))
+    os.write(fd, ''.join(load_file(path)).encode('utf-8'))
     mod = imp.load_source('plugin', fn)
     os.remove(fn)
     if os.path.exists(fn+'c'):

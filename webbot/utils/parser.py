@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from HTMLParser import HTMLParser
+from datetime import datetime
 from functools import partial
 from jsonpath import jsonpath
 from lxml import html
