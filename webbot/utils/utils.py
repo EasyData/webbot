@@ -134,23 +134,25 @@ def to_unicode(txt):
         return u''
 
 def load_file(path):
+
     if os.path.exists(path):
         path = os.path.abspath(path)
         path = 'file://'+path
+
     try:
         if path.startswith('redis://') or path.startswith('mongodb://'):
-            txt = '\n'.join(load_db(path))
+            for line in load_db(path):
+                yield to_unicode(line)
         else:
-            txt = urlopen(path, timeout=10).read()
-        txt = to_unicode(txt)
+            for line in urlopen(path, timeout=10):
+                yield to_unicode(line)
     except Exception as ex:
         log.msg(u'cannot load file <{}>'.format(path.decode('utf-8')), level=log.ERROR)
-        txt = u''
-    return txt
 
 def load_db(uri):
+
     uri, key = uri.rsplit('.', 1)
-    gd = re.match(r'^(?P<key>\w+)(\[(?P<start>\d*):(?P<stop>\d*)\])?$', key).groupdict()
+    gd = re.match(r'^(?P<key>[^[]+)(\[(?P<start>\d*):(?P<stop>\d*)\])?$', key).groupdict()
     key = gd['key']
     start = int(gd['start'] or 0)
     stop = int(gd['stop'] or -1)
@@ -164,7 +166,12 @@ def load_db(uri):
         elif t=='zset':
             words = rdb.zrange(key, start, stop)
         elif t=='list':
-            words = rdb.lrange(key, start, stop)
+            #words = rdb.lrange(key, start, stop)
+            # FIXME: run forever
+            while True:
+                word = rdb.blpop(key, 60)
+                if word:
+                    yield word[1]
         elif t=='hash':
             words = rdb.hvals(key)
         elif t=='string':
@@ -177,10 +184,11 @@ def load_db(uri):
         span = span if span>0 else 0
         words = [u'{}'.format(i[key]) for i in tbl.find({}, {key:1}).skip(start).limit(span)]
 
-    return set(words)
+    for word in set(words):
+        yield word
 
 def load_cfg(path):
-    cfg = json.loads(load_file(path))
+    cfg = json.loads('\n'.join(load_file(path)))
     if 'base' in cfg:
         cfg = dict(load_cfg(cfg['base']).items()+cfg.items())
         del cfg['base']
@@ -188,7 +196,7 @@ def load_cfg(path):
 
 def load_plugin(path):
     fd, fn = tempfile.mkstemp()
-    os.write(fd, load_file(path).encode('utf-8'))
+    os.write(fd, '\n'.join(load_file(path)).encode('utf-8'))
     mod = imp.load_source('plugin', fn)
     os.remove(fn)
     if os.path.exists(fn+'c'):
@@ -215,6 +223,15 @@ def generate_urls(obj, macro):
 
             if 'keywords' in obj:
                 kw_obj = obj['keywords']
+
+                sub = kw_obj.get('sub')
+                if sub:
+                    frm = sub.get('from')
+                    to = sub.get('to')
+                    sub = functools.partial(re.sub, frm, to)
+                else:
+                    sub = lambda x:x
+
                 for kw in load_keywords(kw_obj):
                     key = kw_obj['name'].encode('utf-8')
                     val = kw.encode(kw_obj.get('enc', 'utf-8'), errors='ignore') if type(kw)==unicode else str(kw)
@@ -222,6 +239,7 @@ def generate_urls(obj, macro):
                     sep = kw_obj.get('sep')
                     if col>0:
                         val = val.split(sep)[col-1]
+                    val = sub(val)
                     if kw_obj.get('query', True):
                         qstr.update({key:val})
                         url = base+'?'+urlencode(qstr)
@@ -239,46 +257,41 @@ def generate_urls(obj, macro):
         raise CloseSpider()
 
 def load_keywords(kw_obj, msg='keywords'):
-    keywords = set()
+
+    seen = set()
 
     if type(kw_obj)==dict:
 
-        incfile = kw_obj.get('file') or kw_obj.get('incfile')
-        if incfile:
-            for line in load_file(incfile).splitlines():
-                kw = line.strip()
-                if kw and not kw.startswith('#'):
-                    keywords.add(kw)
-
         excfile = kw_obj.get('excfile')
         if excfile:
-            exc = set()
-            for line in load_file(excfile).splitlines():
+            for line in load_file(excfile):
                 kw = line.strip()
                 if kw and not kw.startswith('#'):
-                    exc.add(kw)
-            keywords -= exc
+                    seen.add(kw)
+
+        incfile = kw_obj.get('file') or kw_obj.get('incfile')
+        if incfile:
+            for line in load_file(incfile):
+                kw = line.strip()
+                if kw and not kw.startswith('#'):
+                    if kw not in seen:
+                        seen.add(kw)
+                        yield kw
 
         rang = kw_obj.get('range')
         if rang:
             start = rang.get('start', 0)
             stop = rang.get('stop', 0)
             step = rang.get('step', 1)
-            for kw in range(start, stop, step):
-                keywords.add(str(kw))
+            for kw in xrange(start, stop, step):
+                if kw not in seen:
+                    seen.add(kw)
+                    yield kw
 
         for kw in kw_obj.get('list', []):
-            keywords.add(kw)
-
-        sub = kw_obj.get('sub')
-        if sub:
-            frm = sub.get('from')
-            to = sub.get('to')
-            keywords = {re.sub(frm, to, kw) for kw in keywords}
-
-        log.msg(u'load {} from <{}>({})'.format(msg, incfile, len(keywords)))
-
-    return keywords
+            if kw not in seen:
+                seen.add(kw)
+                yield kw
 
 class UnicodePrinter(pprint.PrettyPrinter):
 

@@ -22,6 +22,10 @@ class MessageSender(object):
         self.skt.connect(uri)
 
     def send(self, obj):
+        r"""send obj to zmq socket"""
+        self.skt.send_pyobj(obj, flags=zmq.NOBLOCK)
+
+    def zend(self, obj):
         r"""send zipped obj to zmq socket"""
         buf = Zipper.dumps(obj)
         self.skt.send(buf, flags=zmq.NOBLOCK)
