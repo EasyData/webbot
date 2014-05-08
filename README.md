@@ -218,6 +218,7 @@ A simple webbot based on scrapy(0.22.2)
             "pages" : {"start":0, "stop":250}
         },
         "#4": {
+            "match" : "year=1949\\b",
             "follow": false,
             "regex" : "/p/[0-9]+",
             "xpath" : "//ul[@id='thread_list']//a[@class='j_th_tit']",
@@ -239,6 +240,7 @@ A simple webbot based on scrapy(0.22.2)
 
 **规则项**的值类型为`dict`, 由下列元素组成:
 
+- `match`, 当前页面的URL需要匹配的regex, 值类型为`string`, 默认值为`null`.
 - `follow`, 是否跟踪链接, 值类型为`bool`或`null`, 默认值为`true`.
     * 当其值为`true`时, 表示: 仅follow, 不parse
     * 当其值为`false`时, 表示: 不follow, 仅parse
@@ -255,10 +257,13 @@ A simple webbot based on scrapy(0.22.2)
     * `start`, 起始页码(包含), 值类型为`int`, 默认值为`1`.
     * `stop`, 终止页面(不包含), 值类型为`int`, 默认值为`5`.
     * `group`, 需要提取的`regex`分组编号, 值类型为`int`, 默认值为`1`.
-- `vars`, 提取变量, 在`fields`中通过`${VAR}`引用
+- `vars`, 提取变量, 值类型为`dict`, 在`fields`中通过`${VAR}`引用.
 
-> 注意: `regex`, `xpath`, `pages`都是用来对链接进行过滤的, 需要同时满足.
-> 注意: `vars`中定义的变量名需要英文大写
+注意:
+
+- 当规则项的`match`为非空时, 当前页面的URL需要匹配其所指定的regex, 否则该规则项失效.
+- 规则项中的`regex`, `xpath`及`pages`, 都是用来对链接进行过滤的, 需要同时满足.
+- `vars`中定义的变量名需要英文大写, 否则忽略不计.
 
 ## loop
 
@@ -584,6 +589,12 @@ A simple webbot based on scrapy(0.22.2)
 
         {...}
 
+    # 校验配置
+    $ jq . douban.conf
+
     # 测试配置
     $ webbot config=douban.conf
+
+    # 调试配置
+    $ webbot config=douban.conf -a verbose=9 -L DEBUG
 

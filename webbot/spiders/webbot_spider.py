@@ -109,6 +109,8 @@ class WebbotSpider(CrawlSpider):
             follow = v.get('follow', True)
             callback = None if follow else 'parse_page'
             follow = True if follow is None else follow
+
+            match = self.macro.expand(v.get('match'))
             regex = self.macro.expand(v.get('regex'))
             css = self.macro.expand(v.get('css'))
             if css:
@@ -130,6 +132,7 @@ class WebbotSpider(CrawlSpider):
                 callback=callback,
                 follow=follow
             )
+            rule.match = match
 
             self.rules.append(rule)
         self._compile_rules()
@@ -396,6 +399,10 @@ class WebbotSpider(CrawlSpider):
 
         for n, rule in enumerate(self._rules):
 
+            # HACK 1
+            if rule.match and not re.search(rule.match, response.url):
+                continue
+
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
@@ -407,6 +414,7 @@ class WebbotSpider(CrawlSpider):
                 r.meta.update(rule=n, link_text=link.text)
                 r.meta.update(meta)
 
+                # HACK 2
                 fun = rule.process_request
                 if not hasattr(fun, 'nargs'):
                     fun.nargs = len(inspect.getargs(fun.func_code).args)
