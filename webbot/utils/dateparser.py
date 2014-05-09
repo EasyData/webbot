@@ -74,7 +74,7 @@ def parse_date(data, fmt, tz):
                 dt = datetime.utcfromtimestamp(0)+offset
 
     # UNIX TIMESTAMP
-    elif fmt=='unix':
+    elif fmt in ['epoch', 'unix']:
         dt = datetime.utcfromtimestamp(int(data))
         offset = timedelta(0)
     else:

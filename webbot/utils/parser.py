@@ -153,6 +153,26 @@ class IntParser(BaseParser):
         except:
             return 0
 
+class EpochParser(BaseParser):
+
+    def parse(self, data):
+
+        try:
+            zero = datetime.utcfromtimestamp(0)
+            epoch = int((data-zero).total_seconds())
+            return epoch
+        except:
+            return 0
+
+class DefaultParser(BaseParser):
+
+    def parse(self, data):
+
+        if not data:
+            return self.inf.get('value')
+        else:
+            return data
+
 class UnescParser(BaseParser):
 
     def parse(self, data):
@@ -214,7 +234,10 @@ class StrParser(BaseParser):
 
     def parse(self, data):
         if type(data) in [str, unicode]:
-            return data.strip()
+            data = data.strip()
+        if not isinstance(data, unicode):
+            data = unicode(str(data), encoding='utf-8')
+        return data
 
 class TrimParser(BaseParser):
 
@@ -223,31 +246,27 @@ class TrimParser(BaseParser):
 
 class FilterParser(BaseParser):
 
-    def __call__(self, data):
-
-        return [i for i in data if self.filter(i)]
-
-    def filter(self, data):
+    def parse(self, data):
         for k,v in self.inf.iteritems():
             if k=='type':
                 continue
             elif k=='delta':
                 now = datetime.utcnow()
                 if not (type(data)==datetime and (now-data).total_seconds()<v):
-                    return False
+                    return
             elif k=='match':
                 if not (type(data) in [str, unicode] and re.search(v, data)):
-                    return False
+                    return
             elif k=='min':
                 if data<v:
-                    return False
+                    return
             elif k=='max':
                 if data>v:
-                    return False
+                    return
             else:
                 log.msg(u'invalid operator <{}>'.format(k), level=log.WARNING)
                 continue
-        return True
+        return data
 
 class CompParser(BaseParser):
 
