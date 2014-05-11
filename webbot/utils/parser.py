@@ -98,9 +98,9 @@ class HttpParser(BaseParser):
     def parse(self, data):
 
         url = data
-        m = inf.get('method', 'get').upper()
-        d = inf.get('data', {})
-        e = inf.get('enc', 'utf-8')
+        m = self.inf.get('method', 'get').upper()
+        d = self.inf.get('data', {})
+        e = self.inf.get('enc', 'utf-8')
         if m=='GET':
             return requests.get(url).content.decode(e)
         elif m=='POST':
@@ -112,15 +112,15 @@ class MapParser(BaseParser):
 
     def parse(self, data):
 
-        m = inf.get('map')
-        d = inf.get('default')
+        m = self.inf.get('map')
+        d = self.inf.get('default')
         return m.get(data, d)
 
 class XpathParser(BaseParser):
 
     def parse(self, data):
 
-        qs = inf.get('query')
+        qs = self.inf.get('query')
         dom = html.fromstring(data)
         return dom.xpath(qs)
 
@@ -128,7 +128,7 @@ class JpathParser(BaseParser):
 
     def parse(self, data):
 
-        qs = inf.get('query')
+        qs = self.inf.get('query')
         return jsonpath(json.loads(data), qs)
 
 class FloatParser(BaseParser):
