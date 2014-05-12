@@ -240,13 +240,14 @@ class WebbotSpider(CrawlSpider):
 
     def parse_json_item(self, response, loop, fields):
 
+        meta = response.meta
         txt = utils.to_unicode(response.body)
         if hasattr(self, 'json_type') and self.json_type=='list':
             l, r = txt.find('['), txt.rfind(']')
         else:
             l, r = txt.find('{'), txt.rfind('}')
         obj = json.loads(txt[l:r+1])
-        self.macro.update({'URL':response.url})
+        self.macro.update({'URL':response.url, 'keyword':meta.get('keyword', '')})
 
         for e in jsonpath.jsonpath(obj, loop or '$[]') or []:
 
@@ -254,17 +255,22 @@ class WebbotSpider(CrawlSpider):
 
             for k,v in fields.iteritems():
                 if 'value' in v:
-                    v_x = v.get('value')
+                    v_x = self.macro.expand(v.get('value'))
                 elif 'jpath' in v:
                     v_x = jsonpath.jsonpath(e, self.macro.expand(v.get('jpath')))
+                    v_x = None if v_x==False else v_x
                 else:
                     log.msg(u'field [{}] should contains "value" or "jpath"'.format(k), level=log.WARNING)
                     continue
 
-                val = parser.make_parser(v.get('parse', {}))([self.macro.expand(v_x)])
+                val = parser.make_parser(v.get('parse', {}))(v_x)
 
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'))
+
+                if not val and 'multi' not in v:
+                    log.msg(u'field [{}] is empty:\n{}'.format(k, item), level=log.WARNING)
+                    break
 
                 item[k] = arg_to_iter(val)
 

@@ -129,6 +129,13 @@ class JpathParser(BaseParser):
     def parse(self, data):
 
         qs = self.inf.get('query')
+        t = self.inf.get('type', 'object')
+        if t=='object':
+            lr = '{}'
+        else:
+            lr = '[]'
+        l,r = data.find(lr[0]),data.rfind(lr[-1])
+        data = data[l:r+1]
         return jsonpath(json.loads(data), qs)
 
 class FloatParser(BaseParser):
