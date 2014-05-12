@@ -418,8 +418,8 @@ A simple webbot based on scrapy(0.22.2)
     
     'SITE':     站点名称, 于`site`值一致
     'CONF':     配置文件内容
-    'URL':      本页面链接(仅用于**fields** 字段定义, 不可在**rules**中使用)
-    'COLn':     COL0, COL1, COL2 ... (仅用于**fields** 字段定义, 不可在**rules**中使用)
+    'URL':      本页面链接(仅用于**fields** 字段定义, 不可在**urls**/**rules**中使用)
+    'COLn':     COL0, COL1, COL2 ... (仅用于**fields** 字段定义, 不可在**urls**/**rules**中使用)
 
 ## debug
 
