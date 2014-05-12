@@ -241,7 +241,9 @@ class WebbotSpider(CrawlSpider):
     def parse_json_item(self, response, loop, fields):
 
         meta = response.meta
-        txt = utils.to_unicode(response.body)
+        enc = getattr(self, 'json_enc', 'utf-8')
+        txt = unicode(response.body, encoding=enc)
+
         if hasattr(self, 'json_type') and self.json_type=='list':
             l, r = txt.find('['), txt.rfind(']')
         else:
