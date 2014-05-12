@@ -234,7 +234,7 @@ def generate_urls(obj, macro):
 
                 for kw in load_keywords(kw_obj):
                     key = kw_obj['name'].encode('utf-8')
-                    val = kw.encode(kw_obj.get('enc', 'utf-8'), errors='ignore') if type(kw)==unicode else str(kw)
+                    val = kw
                     col = kw_obj.get('col', 0)
                     sep = kw_obj.get('sep')
                     if col>0:
@@ -244,6 +244,7 @@ def generate_urls(obj, macro):
                         qstr.update({key:val})
                         url = base+'?'+urlencode(qstr)
                     else:
+                        val = val.encode(kw_obj.get('enc', 'utf-8'), errors='ignore') if type(val)==unicode else str(val)
                         url = base.replace(key, val)+'?'+urlencode(qstr)
                     macro.update({'sep':sep})
                     macro.bind(url, kw)
