@@ -310,13 +310,24 @@ A simple webbot based on scrapy(0.22.2)
     * 字符串
 - `css`, css表达式, 优先级高于`xpath`
 - `xpath`, xpath表达式
-- `default`, 默认值, 取值范围于`value`相同. 若`value`及`xpath`提取数据为空, 则使用该默认值.
+- `default`, 默认值, 取值范围与`value`相同. 若`value`及`xpath`, 在执行`parse`后, 结果为空, 则使用该默认值.
 - `regex`, regex表达式(先于`parse`执行)
+
+        # 提取手机号码
+        "regex": "手机:\\s*([0-9]{13})"
+
 - `parse`, 数据解析, 值类型为`dict`或`list`(由`dict`组成), 默认值为`{}`.
     * 当值类型为`dict`时:
         - `type`, 解析类型, 值类型为`string`, 默认值为`str`. (取值范围为下述10+种之一):
             * `str`, 文本
             * `text`, 文本(自动去除tag)
+            * `string`, 文本
+                - `method`, 方法名称(支持python的str无参数方法)
+                    * `lower`
+                    * `upper`
+                    * `title`
+                    * `strip`
+                    * ...
             * `unesc`, HTML实体转义
 
                     # "hello&amp;world" => "hello&world"
@@ -326,10 +337,16 @@ A simple webbot based on scrapy(0.22.2)
             * `jpath`, jpath表达式
             * `sub`, 字符替换
                 - `from`, 替换前
-                - `to`, 替换后
+                - `to`, 替换后, 值类型为`string`或`list of string`
 
                         # "hello - world"  => "world - hello"
                         {"type":"sub", "from":"(.*) - (.*)", "to":"\\g<2> - \\g<1>"}
+
+                        # >>> http://datageek.info/logo-WxH.png
+                        # --> http://datageek.info/logo-32x32.png
+                        # --> http://datageek.info/logo-64x64.png
+                        # --> http://datageek.info/logo-128x128.png
+                        "image_urls": {"xpath":"//img[@id='logo']/@src", "parse":{"type":"sub", "from":"WxH", "to":["32x32", "64x64", "128x128"]}, "multi":true}
 
             * `int`, 整数, 提取字符串中出现的数字, 并且转化成整数
             * `float`, 浮点数, 提取字符串中出现的数字及小数点, 并且转化成浮点数
@@ -337,30 +354,33 @@ A simple webbot based on scrapy(0.22.2)
                 - `sep`, 分隔符, 值类型为`string`, 默认值为`" "`(即, 空格).
             * `list`, 拼接(自动去除tag)
                 - `sep`, 分隔符, 值类型为`string`, 默认值为`" "`(即, 空格).
+            * `map`, 对应
+                - `map`, 对应, 值类型为`dict`, 其中key是regex
+                - `default`, 默认值
             * `date`, 日期
                 - `fmt`, 日期格式, 值类型为`string`
-                    - `auto`(默认), 可自动识别下列日期格式:
+                    * `auto`(默认), 可自动识别下列日期格式:
 
-                            * 刚刚
-                            * 几秒前
-                            * 半分钟前
-                            * 半小时前
-                            * 半天前
-                            * 8秒前
-                            * 8 分钟前
-                            * 8小时前
-                            * 8 天前
-                            * 今天 12:12
-                            * 昨日 12:12
-                            * 前天 12:12
-                            * 2013年3月5日 18:30
-                            * 2013年03月05日 18:30
-                            * 2013-03-05 18:30
-                            * 2013-3-5 18:30:00
-                            * ...
+                            - 刚刚
+                            - 几秒前
+                            - 半分钟前
+                            - 半小时前
+                            - 半天前
+                            - 8秒前
+                            - 8 分钟前
+                            - 8小时前
+                            - 8 天前
+                            - 今天 12:12
+                            - 昨日 12:12
+                            - 前天 12:12
+                            - 2013年3月5日 18:30
+                            - 2013年03月05日 18:30
+                            - 2013-03-05 18:30
+                            - 2013-3-5 18:30:00
+                            - ...
 
-                    - `epoch`, UNIX时间戳
-                    - `default`, 默认值
+                    * `epoch`, UNIX时间戳
+                    * `default`, 默认值
                 - `tz`, 时区, 值类型为`string`, 默认值为`+00:00`(即, UTC时间). 注意: 当涉及到相对时间计算时, 需要指定`tz`.
             * `cst`, CST(China Standard Time)日期 (`{"type":"cst"}`等价于`{"type:"date", "tz":"+08:00"}`), 为中国大陆用户量身定做
                 - `fmt`, 日期格式, 值类型为`string`, 默认值为`auto`.
@@ -381,6 +401,11 @@ A simple webbot based on scrapy(0.22.2)
 
             # 首先使用`jpath`提取字符串, 并指定它为`cst`时间
             "parse": [{"type":"jpath", "query":"$.content.date"}, "cst"]
+
+    * 当指定类型的parser类型为`string`, 也可以简写:
+
+            # 首先使用`strip`, 再使用`title`
+            "parse": ["strip", "title"]
 
 - `upsert`, 更新/插入模式切换, 值类型为`bool`, 默认值为`false`. (仅用于`mongo`入库)
 

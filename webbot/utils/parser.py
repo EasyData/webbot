@@ -114,7 +114,11 @@ class MapParser(BaseParser):
 
         m = self.inf.get('map')
         d = self.inf.get('default')
-        return m.get(data, d)
+        for k,v in m.iteritems():
+            if re.search(k, data):
+                return v
+        else:
+            return d
 
 class XpathParser(BaseParser):
 
@@ -246,6 +250,17 @@ class StrParser(BaseParser):
             data = unicode(str(data), encoding='utf-8')
         return data
 
+class StringParser(BaseParser):
+
+    def parse(self, data):
+        method = self.inf['method']
+        if isinstance(data, str):
+            return getattr(str, method)(data)
+        if isinstance(data, unicode):
+            return getattr(unicode, method)(data)
+        else:
+            raise TypeError('unsupport')
+
 class TrimParser(BaseParser):
 
     def parse(self, data):
@@ -297,7 +312,11 @@ def make_parser(inf):
     if isinstance(inf, list):
         return CompParser(inf)
     elif isinstance(inf, str) or isinstance(inf, unicode):
-        return make_parser({'type':inf})
+        if hasattr(str, inf):
+            inf = {'type':'string', 'method':inf}
+        else:
+            inf = {'type':inf}
+        return make_parser(inf)
     else:
         Parser = all_parsers.get(inf.get('type'), BaseParser)
         return Parser(inf)
