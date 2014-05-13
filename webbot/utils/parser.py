@@ -155,7 +155,7 @@ class IntParser(BaseParser):
 
         try:
             data = data.replace(',', '')
-            data = re.search(r'[.0-9]+', data).group(0)
+            data = re.search(r'[0-9]+', data).group(0)
             return int(data)
         except:
             return 0
