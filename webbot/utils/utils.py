@@ -3,7 +3,6 @@
 
 from .dateparser import parse_date
 from HTMLParser import HTMLParser
-from chardet import detect
 from datetime import datetime, timedelta
 from lxml import etree, html
 from lxml.html.clean import Cleaner
@@ -128,7 +127,7 @@ def to_unicode(txt):
     if type(txt)==unicode:
         return txt
     elif type(txt)==str:
-        enc = 'gbk' if detect(txt[:2048])['encoding'].lower()=='gb2312' else 'utf-8'
+        enc = 'utf-8'
         return txt.decode(enc)
     else:
         return u''
@@ -144,7 +143,7 @@ def load_file(path):
             for line in load_db(path):
                 yield to_unicode(line)
         else:
-            for line in urlopen(path, timeout=10):
+            for line in urlopen(path, timeout=30):
                 yield to_unicode(line)
     except Exception as ex:
         log.msg(u'cannot load file <{}>'.format(path.decode('utf-8')), level=log.ERROR)
