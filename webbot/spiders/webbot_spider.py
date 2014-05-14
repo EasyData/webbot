@@ -242,7 +242,7 @@ class WebbotSpider(CrawlSpider):
 
         meta = response.meta
         enc = getattr(self, 'json_enc', 'utf-8')
-        txt = unicode(response.body, encoding=enc)
+        txt = unicode(response.body, encoding=enc, errors='ignore')
 
         if hasattr(self, 'json_type') and self.json_type=='list':
             l, r = txt.find('['), txt.rfind(']')
