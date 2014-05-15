@@ -18,6 +18,7 @@ def parse_date(data, fmt, tz):
         now = datetime.utcnow().replace(microsecond=0)+offset
         now_1 = now-timedelta(days=1)
         now_2 = now-timedelta(days=2)
+        today = now.replace(hour=0, minute=0, second=0)
 
         # 几/刚/今天/昨天/前天
         x = data.strip()
@@ -42,33 +43,30 @@ def parse_date(data, fmt, tz):
              or re.search('', '')).groupdict()
 
         if res:
-            dt = now - timedelta(
-                                days    = int(res.get('d', 0)),
-                                hours   = int(res.get('H', 0)),
-                                minutes = int(res.get('M', 0)),
-                                seconds = int(res.get('S', 0))
-                              )
+            if 'd' in res:
+                dt = today - timedelta(
+                    days    = int(res.get('d') or 0)
+                )
+            else:
+                dt = now - timedelta(
+                    hours   = int(res.get('H') or 0),
+                    minutes = int(res.get('M') or 0),
+                    seconds = int(res.get('S') or 0)
+                )
         else:
             # XX-XX-XX XX:XX:XX
             res = ( re.search(ur'(?P<Y>\d+)[/-](?P<m>\d+)[/-](?P<d>\d+)(\s+(?P<H>\d{2}):(?P<M>\d{2})(:(?P<S>\d{2}))?)?', x) \
                  or re.search('', '')).groupdict()
 
             if res:
-                Y = res.get('Y', now.year)
-                m = res.get('m', now.month)
-                d = res.get('d', now.day)
-                H = res.get('H', now.hour)
-                M = res.get('M', now.minute)
-                S = res.get('S', 0)
-
                 dt = datetime(
-                            year   = int(Y) if Y!=None else now.year,
-                            month  = int(m) if m!=None else now.month,
-                            day    = int(d) if d!=None else now.day,
-                            hour   = int(H) if H!=None else now.hour,
-                            minute = int(M) if M!=None else now.minute,
-                            second = int(S) if S!=None else 0
-                        )
+                    year   = int(res.get('Y') or 0),
+                    month  = int(res.get('m') or 0),
+                    day    = int(res.get('d') or 0),
+                    hour   = int(res.get('H') or 0),
+                    minute = int(res.get('M') or 0),
+                    second = int(res.get('S') or 0)
+                )
             else:
                 # 1970-01-01 00:00:00
                 dt = datetime.utcfromtimestamp(0)+offset
