@@ -115,8 +115,12 @@ class MapParser(BaseParser):
         m = self.inf.get('map')
         d = self.inf.get('default')
         for k,v in m.iteritems():
+            if not k.startswith('^'):
+                k = '.*'+k
+            if not k.endswith('$'):
+                k = k+'.*'
             if re.search(k, data):
-                return v
+                return re.sub(k, v, data)
         else:
             return d
 
