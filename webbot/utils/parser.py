@@ -266,6 +266,11 @@ class TrimParser(BaseParser):
     def parse(self, data):
         return data.strip()
 
+class NormParser(BaseParser):
+
+    def parse(self, data):
+        return re.sub(r'\s+', ' ', data).strip()
+
 class FilterParser(BaseParser):
 
     def parse(self, data):
@@ -285,16 +290,31 @@ class FilterParser(BaseParser):
             elif k=='max':
                 if data>v:
                     return
+            elif k=='str':
+                if not getattr(unicode, v)(unicode(data)):
+                    return
             else:
                 log.msg(u'invalid operator <{}>'.format(k), level=log.WARNING)
                 continue
         return data
 
-class CompParser(BaseParser):
+class TeeParser(BaseParser):
 
     def __init__(self, inf):
 
-        super(CompParser, self).__init__(inf)
+        super(TeeParser, self).__init__(inf)
+        self.parsers = [make_parser(i) for i in self.inf['tee']]
+
+    def parse(self, data):
+
+        for p in self.parsers:
+            yield p(data)
+
+class PipeParser(BaseParser):
+
+    def __init__(self, inf):
+
+        super(PipeParser, self).__init__(inf)
         self.parsers = [make_parser(i) for i in self.inf]
         self.func = Compose(*self.parsers)
 
@@ -310,7 +330,7 @@ all_parsers = {
 def make_parser(inf):
 
     if isinstance(inf, list):
-        return CompParser(inf)
+        return PipeParser(inf)
     elif isinstance(inf, str) or isinstance(inf, unicode):
         if hasattr(str, inf):
             inf = {'type':'string', 'method':inf}
