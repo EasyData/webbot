@@ -6,51 +6,50 @@ A simple webbot based on scrapy(0.22.2)
 ## 功能列表
 
 - config(json)
-- xpath(ver1.0+extensions)
-- css(ver3.0)
+- selector(xpath/css/jpath)
 - regex(python flavor)
 - macro(year/month/day/hour/minute/second)
 - page(start/stop/step)
-- parse(int/float/date/utc/text/map)
+- parse(int/float/date/text/string/sub/grep/map/tee)
 - plugin(python script)
 - ImageDownloader
-- filter(detetime-delta/regex/number-range)
-- database(mongo[automatically]/mysql[manually])
+- filter(detetime-delta/regex/number-range/str)
+- database(redis/mongo/mysql)
 - proxy(http)
 - HttpMethod(GET/POST)
 - HttpHeader(Cookie/Usage-Agent/Referer)
 - logging(DEBUG/INFO/WARNING/ERROR)
-- settings(`download_timeout/download_delay/user_agent`)
+- settings(download_timeout/download_delay/user_agent)
 - MessageQueue(zmq)
-- StatsPost
-- BatchDeploy
-- debug
+- StatsPost(mongo)
+- BatchDeploy(curl)
+- debug(pprint)
 
 ## scrapy入门
 
 - test:
 
-        $ scrapy crawl <spider>
-        
+        $ scrapy crawl <spider> -a argument=value -s setting=value
+
 - deploy:
 
-        $ scrapy deploy <project>
-        
+        $ scrapy deploy [profile]
+
 - schedule:
 
-        $ curl http://yourdomain:6800/schedule.json -d project=<project> -d spider=<spider> -d config=</path/to/spider.conf> -d setting=DOWNLOAD_DELAY=1
-        
+        $ curl http://localhost:6800/schedule.json -d project=<project> -d spider=<spider> -d config=</path/to/spider.conf> -d setting=DOWNLOAD_DELAY=1
+
 - cancel:
 
-        $ curl http://yourdomain:6800/cancel.json   -d project=<project> -d job=xxxxxxxxxxx
-        
+        $ curl http://localhost:6800/cancel.json   -d project=<project> -d job=xxxxxxxxxxx
+
 - listjobs:
 
-        $ curl http://yourdomain:6800/listjobs.json -d project=<project>
+        $ curl http://localhost:6800/listjobs.json -d project=<project>
 
 ## 在线工具
 
-- http://yourdomain:6800/
+- http://localhost:6800/
 - http://jsonlint.com/
 - http://regexpal.com/
 - http://dillinger.io/
@@ -342,11 +341,10 @@ A simple webbot based on scrapy(0.22.2)
                         # "hello - world"  => "world - hello"
                         {"type":"sub", "from":"(.*) - (.*)", "to":"\\g<2> - \\g<1>"}
 
-                        # >>> http://datageek.info/logo-WxH.png
-                        # --> http://datageek.info/logo-32x32.png
-                        # --> http://datageek.info/logo-64x64.png
-                        # --> http://datageek.info/logo-128x128.png
-                        "image_urls": {"xpath":"//img[@id='logo']/@src", "parse":{"type":"sub", "from":"WxH", "to":["32x32", "64x64", "128x128"]}, "multi":true}
+                        #                                    /=> http://datageek.info/logo-32x32.png
+                        # http://datageek.info/logo-WxH.png |
+                        #                                    \=> http://datageek.info/logo-64x64.png
+                        "image_urls": {"xpath":"//img[@id='logo']/@src", "parse":{"type":"sub", "from":"WxH", "to":["32x32", "64x64"]}, "multi":true}
 
             * `int`, 整数, 提取字符串中出现的数字, 并且转化成整数
             * `float`, 浮点数, 提取字符串中出现的数字及小数点, 并且转化成浮点数
@@ -360,25 +358,23 @@ A simple webbot based on scrapy(0.22.2)
             * `date`, 日期
                 - `fmt`, 日期格式, 值类型为`string`
                     * `auto`(默认), 可自动识别下列日期格式:
-
-                            - 刚刚
-                            - 几秒前
-                            - 半分钟前
-                            - 半小时前
-                            - 半天前
-                            - 8秒前
-                            - 8 分钟前
-                            - 8小时前
-                            - 8 天前
-                            - 今天 12:12
-                            - 昨日 12:12
-                            - 前天 12:12
-                            - 2013年3月5日 18:30
-                            - 2013年03月05日 18:30
-                            - 2013-03-05 18:30
-                            - 2013-3-5 18:30:00
-                            - ...
-
+                        - 刚刚
+                        - 几秒前
+                        - 半分钟前
+                        - 半小时前
+                        - 半天前
+                        - 8秒前
+                        - 8 分钟前
+                        - 8小时前
+                        - 8 天前
+                        - 今天 12:12
+                        - 昨日 12:12
+                        - 前天 12:12
+                        - 2013年3月5日 18:30
+                        - 2013年03月05日 18:30
+                        - 2013-03-05 18:30
+                        - 2013-3-5 18:30:00
+                        - ...
                     * `epoch`, UNIX时间戳
                     * `default`, 默认值
                 - `tz`, 时区, 值类型为`string`, 默认值为`+00:00`(即, UTC时间). 注意: 当涉及到相对时间计算时, 需要指定`tz`.
@@ -390,6 +386,19 @@ A simple webbot based on scrapy(0.22.2)
                 - `match`, 字符串匹配, 只能用于过滤`string`类型的字段
                 - `min`, 最大数值, 只能用于过滤`number`类型的字段
                 - `max`, 最小数值, 只能用于过滤`number`类型的字段
+                - `str`, 字符串判别, 支持形如`isXXX`(返回`bool`)的字符串方法:
+                    * `isalpha`
+                    * `isdigit`
+                    * `isalnum`
+                    * `isupper`
+                    * `islower`
+                    * ...
+            * `tee`, 并行解析, 例如:
+
+                    #       /=> DATA
+                    # Data |
+                    #       \=> data
+                    {"value":"data", "parse":{"type":"tee","tee":["upper", "lower"]}, "multi":true}
 
 
     * 当值类型为`list`时, 会按先后顺序, 依次进行数据变换. 例如:
@@ -628,4 +637,11 @@ A simple webbot based on scrapy(0.22.2)
 
     # 调试配置
     $ webbot config=douban.conf -a verbose=9 -L DEBUG
+
+## TODO
+
+- 与redis深度整合
+- 支持嵌套数据类型
+- web客户端
+- 更多的parser(DSL)
 
