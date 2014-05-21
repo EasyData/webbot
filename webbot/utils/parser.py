@@ -258,12 +258,9 @@ class StringParser(BaseParser):
 
     def parse(self, data):
         method = self.inf['method']
-        if isinstance(data, str):
-            return getattr(str, method)(data)
-        if isinstance(data, unicode):
-            return getattr(unicode, method)(data)
-        else:
-            raise TypeError('unsupport')
+        args = self.inf.get('args', [])
+        kwargs = self.inf.get('kwargs', {})
+        return getattr(data, method)(*args, **kwargs)
 
 class TrimParser(BaseParser):
 
@@ -277,29 +274,47 @@ class NormParser(BaseParser):
 
 class FilterParser(BaseParser):
 
+    def filter(self, op, x, y):
+
+        if self.inf.get('swap'):
+            x,y = y,x
+
+        return {
+            '$in':  lambda: x in y,
+            '$nin': lambda: x not in y,
+            '$eq':  lambda: x == y,
+            '$ne':  lambda: x != y,
+            '$lt':  lambda: x < y,
+            '$lte': lambda: x <= y,
+            '$gt':  lambda: x > y,
+            '$gte': lambda: x >= y,
+            '$regex': lambda: re.search(y, x),
+        }[op]()
+
     def parse(self, data):
+
         for k,v in self.inf.iteritems():
-            if k=='type':
+
+            if k in ['type', 'args', 'kwargs', 'not', 'swap']:
                 continue
             elif k=='delta':
                 now = datetime.utcnow()
-                if not (type(data)==datetime and (now-data).total_seconds()<v):
-                    return
-            elif k=='match':
-                if not (type(data) in [str, unicode] and re.search(v, data)):
-                    return
-            elif k=='min':
-                if data<v:
-                    return
-            elif k=='max':
-                if data>v:
-                    return
-            elif k=='str':
-                if not getattr(unicode, v)(unicode(data)):
-                    return
+                ok = (now-data).total_seconds()<v
+            elif k=='string':
+                args = self.inf.get('args', [])
+                kwargs = self.inf.get('kwargs', {})
+                ok = getattr(data, v)(*args, **kwargs)
+            elif k.startswith('$'):
+                ok = self.filter(k, data, v)
             else:
                 log.msg(u'invalid operator <{}>'.format(k), level=log.WARNING)
                 continue
+
+            if self.inf.get('not'):
+                ok = not ok
+            if not ok:
+                return
+
         return data
 
 class TeeParser(BaseParser):

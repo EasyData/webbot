@@ -321,7 +321,7 @@ A simple webbot based on scrapy(0.22.2)
             * `str`, 文本
             * `text`, 文本(自动去除tag)
             * `string`, 文本
-                - `method`, 方法名称(支持python的str无参数方法)
+                - `method`, 方法名称(使用`args`/`kwargs`传入额外参数)
                     * `lower`
                     * `upper`
                     * `title`
@@ -381,18 +381,25 @@ A simple webbot based on scrapy(0.22.2)
             * `cst`, CST(China Standard Time)日期 (`{"type":"cst"}`等价于`{"type:"date", "tz":"+08:00"}`), 为中国大陆用户量身定做
                 - `fmt`, 日期格式, 值类型为`string`, 默认值为`auto`.
             * `epoch`, UNIX时间戳, 输入为`datetime`, 输出为`int`.
-            * `filter`, 过滤(若有多个判断, 须同时满足)
+            * `filter`, 过滤(若有多个判断, 须同时满足)(使用`not`取反)
                 - `delta`, 最大时间差(单位: `秒`), 只能用于过滤`datetime`类型的字段(使用UTC时间进行比较)
-                - `match`, 字符串匹配, 只能用于过滤`string`类型的字段
-                - `min`, 最大数值, 只能用于过滤`number`类型的字段
-                - `max`, 最小数值, 只能用于过滤`number`类型的字段
-                - `str`, 字符串判别, 支持形如`isXXX`(返回`bool`)的字符串方法:
+                - `string`, 字符串判别, 支持返回`bool`的字符串方法(使用`args`/`kwargs`传入额外参数):
                     * `isalpha`
                     * `isdigit`
                     * `isalnum`
                     * `isupper`
                     * `islower`
                     * ...
+                - `$op`, 布尔运算符(使用`swap`交换参数顺序):
+                    * `$in`
+                    * `$nin`
+                    * `$eq`
+                    * `$ne`
+                    * `$lt`
+                    * `$lte`
+                    * `$gt`
+                    * `$gte`
+                    * `$regex`
             * `tee`, 并行解析, 例如:
 
                     #       /=> DATA
