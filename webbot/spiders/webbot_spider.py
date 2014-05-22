@@ -68,7 +68,7 @@ class WebbotSpider(CrawlSpider):
                 self.log(utils.Y(u'disable {}'.format(i)), level=log.WARNING)
 
         self.log(u'loading config from <{}>:\n{}'.format(unicode(self.config, encoding='utf-8'),
-            json.dumps(self.conf, indent=2, ensure_ascii=False, sort_keys=True)), level=log.INFO)
+            json.dumps(self.conf, indent=2, ensure_ascii=False, sort_keys=False)), level=log.INFO)
 
     def load_config(self):
 
