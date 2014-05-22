@@ -3,6 +3,7 @@
 
 from .dateparser import parse_date
 from HTMLParser import HTMLParser
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from lxml import etree, html
 from lxml.html.clean import Cleaner
@@ -187,7 +188,7 @@ def load_db(uri):
         yield word
 
 def load_cfg(path):
-    cfg = json.loads(''.join(load_file(path)))
+    cfg = json.loads(''.join(load_file(path)), object_pairs_hook=OrderedDict)
     if 'base' in cfg:
         cfg = dict(load_cfg(cfg['base']).items()+cfg.items())
         del cfg['base']
