@@ -187,10 +187,11 @@ def load_db(uri):
     for word in set(words):
         yield word
 
-def load_cfg(path):
-    cfg = json.loads(''.join(load_file(path)), object_pairs_hook=OrderedDict)
+def load_cfg(path, pretty=False):
+    Dict = OrderedDict if pretty else dict
+    cfg = json.loads(''.join(load_file(path)), object_pairs_hook=Dict)
     if 'base' in cfg:
-        cfg = dict(load_cfg(cfg['base']).items()+cfg.items())
+        cfg = Dict(load_cfg(cfg['base'], pretty).items()+cfg.items())
         del cfg['base']
     return cfg
 

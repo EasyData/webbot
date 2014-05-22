@@ -68,11 +68,13 @@ class WebbotSpider(CrawlSpider):
                 self.log(utils.Y(u'disable {}'.format(i)), level=log.WARNING)
 
         self.log(u'loading config from <{}>:\n{}'.format(unicode(self.config, encoding='utf-8'),
-            json.dumps(self.conf, indent=2, ensure_ascii=False, sort_keys=False)), level=log.INFO)
+            json.dumps(self.pretty_conf, indent=2, ensure_ascii=False, sort_keys=False)), level=log.INFO)
 
     def load_config(self):
 
-        conf = utils.load_cfg(self.config)
+        self.pretty_conf = utils.load_cfg(self.config, pretty=True)
+        conf_dump = json.dumps(self.pretty_conf)
+        conf = json.loads(conf_dump)
 
         ### debug
         if self.debug==None:
@@ -82,7 +84,7 @@ class WebbotSpider(CrawlSpider):
         self.site = conf.get('site', u'未知站点')
         self.macro = utils.MacroExpander({
             'SITE': self.site,
-            'CONF': json.dumps(conf)
+            'CONF': conf_dump
         })
 
         ### allowed_domains
@@ -270,7 +272,7 @@ class WebbotSpider(CrawlSpider):
                 if not val and 'default' in v:
                     val = self.macro.expand(v.get('default'))
 
-                if not val and 'multi' not in v:
+                if not (val or v.get('multi') or v.get('opt')):
                     log.msg(u'field [{}] is empty:\n{}'.format(k, item), level=log.WARNING)
                     break
 
@@ -314,8 +316,8 @@ class WebbotSpider(CrawlSpider):
                 if not val and 'default' in v:
                     val = arg_to_iter(self.macro.expand(v.get('default'), meta))
 
-                if not val and 'multi' not in v:
-                    log.msg(u'field [{}] is empty:\n{}'.format(k, loader.load_item()), level=log.WARNING)
+                if not (val or v.get('multi') or v.get('opt')):
+                    log.msg(u'field [{}] is empty:\n{}'.format(k, item), level=log.WARNING)
                     break
 
                 loader.add_value(k, val)

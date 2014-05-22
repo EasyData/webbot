@@ -25,18 +25,32 @@ def item2post(item):
 class BasicPipeline(object):
 
     def open_spider(self, spider):
+
         self.img = 'image_urls' in Item.fields
 
     def process_item(self, item, spider):
+
         try:
+
             for k,v in item.fields.iteritems():
+
                 if v.get('multi'):
                     if k not in item:
                         item[k] = []
-                elif isinstance(item[k], list):
-                    item[k] = item[k][0]
+                    continue
+
+                if k in item:
+                    if isinstance(item[k], list):
+                        item[k] = item[k][0]
+                elif v.get('opt'):
+                    item[k] = None
+                else:
+                    raise Exception('field [{}] is empty'%k)
+
             return item
+
         except Exception as ex:
+
             raise DropItem('item error: {}'.format(ex))
 
 
