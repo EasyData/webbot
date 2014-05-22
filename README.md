@@ -433,6 +433,8 @@ A simple webbot based on scrapy(0.22.2)
     * 当其值为`true`时, 该字段的值为`list`(不能进行mysql入库)
     * 当其值为`false`时, 该字段的值为`string`
 
+- `opt`, 可选模式, 值类型为`bool`, 默认值为`false`. (当`multi`为`false`时生效)
+
 另外, **rules** 以及 **fields** 中的`value`及`xpath`中可以嵌入变量(形如, `${VARNAME}`), 目前支持下列变量:
 
     'UTCNOW':   utcnow.strftime('%Y-%m-%d %H:%M:%S'),
