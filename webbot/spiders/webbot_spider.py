@@ -317,7 +317,7 @@ class WebbotSpider(CrawlSpider):
                     val = arg_to_iter(self.macro.expand(v.get('default'), meta))
 
                 if not (val or v.get('multi') or v.get('opt')):
-                    log.msg(u'field [{}] is empty:\n{}'.format(k, item), level=log.WARNING)
+                    log.msg(u'field [{}] is empty:\n{}'.format(k, loader.load_item()), level=log.WARNING)
                     break
 
                 loader.add_value(k, val)
