@@ -125,6 +125,15 @@ class DedupMiddleware(object):
     def spider_closed(self, spider, reason):
         pass
 
+# 非法请求过滤
+class RequestMiddleware(object):
+
+    def process_request(self, request, spider):
+        url = request.url
+        if url.startswith('http://0.0.0.0'):
+            log.msg('ignore bad request', level=log.DEBUG)
+            raise IgnoreRequest()
+
 # 关键词接力(spidermw)
 class KeywordRelayMiddleware(object):
 

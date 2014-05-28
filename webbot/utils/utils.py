@@ -29,7 +29,10 @@ import string
 import tempfile
 import time
 import unicodedata
+import uuid
 import zlib
+
+MAGIC = str(uuid.uuid4())
 
 try:
     from cPickle import pickle
@@ -165,24 +168,30 @@ def load_db(uri):
             words = rdb.smembers(key)
         elif t=='zset':
             words = rdb.zrange(key, start, stop)
-        elif t=='list':
-            #words = rdb.lrange(key, start, stop)
-            # FIXME: run forever
-            while True:
-                word = rdb.blpop(key, 60)
-                if word:
-                    yield word[1]
         elif t=='hash':
             words = rdb.hvals(key)
         elif t=='string':
             words = [rdb.get(key)]
+        elif t=='list' or t=='none':
+            # RUN FOREVER
+            while True:
+                word = rdb.blpop(key, 1)
+                if word:
+                    yield word[1]
+                else:
+                    yield MAGIC
         else:
             log.msg(u'invalid type <{}>({})'.format(key, t), level=log.WARNING)
             words = []
+
     elif uri.startswith('mongodb://'):
         span = stop-start+1
         span = span if span>0 else 0
         words = [u'{}'.format(i[key]) for i in tbl.find({}, {key:1}).skip(start).limit(span)]
+
+    elif uri.startswith('tcp://'):
+        # FIXME: support zmq
+        pass
 
     for word in set(words):
         yield word
@@ -234,6 +243,11 @@ def generate_urls(obj, macro):
                     sub = lambda x:x
 
                 for kw in load_keywords(kw_obj):
+
+                    if kw==MAGIC:
+                        yield 'http://0.0.0.0'
+                        continue
+
                     key = kw_obj['name'].encode('utf-8')
                     val = kw
                     col = kw_obj.get('col', 0)
@@ -275,17 +289,23 @@ def load_keywords(kw_obj, msg='keywords'):
         if incfile:
             for line in load_file(incfile):
                 kw = line.strip()
+
+                if kw==MAGIC:
+                    yield kw
+                    continue
+
                 if kw and not kw.startswith('#'):
                     if kw not in seen:
                         seen.add(kw)
                         yield kw
 
-        rang = kw_obj.get('range')
-        if rang:
-            start = rang.get('start', 0)
-            stop = rang.get('stop', 0)
-            step = rang.get('step', 1)
+        rg = kw_obj.get('range')
+        if rg:
+            start = rg.get('start', 0)
+            stop = rg.get('stop', 0)
+            step = rg.get('step', 1)
             for kw in xrange(start, stop, step):
+                kw = str(kw)
                 if kw not in seen:
                     seen.add(kw)
                     yield kw
@@ -416,35 +436,14 @@ def first_n_pages(pattern, pages):
 
     return _filter
 
-def filter_data(query, data):
-    for k,v in query.iteritems():
-        if k=='delta':
-            now = datetime.utcnow()
-            if not (type(data)==datetime and (now-data).total_seconds()<v):
-                return False
-        elif k=='match':
-            if not (type(data) in [str, unicode] and re.match(v, data)):
-                return False
-        elif k=='min':
-            if data<v:
-                return False
-        elif k=='max':
-            if data>v:
-                return False
-        else:
-            log.msg(u'invalid query <{}>'.format(query), level=log.WARNING)
-            return False
-    return True
-
-def get_ipaddr(ifname):
+def get_ipaddr():
     try:
-        import socket, fcntl, struct
+        import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return socket.inet_ntoa(fcntl.ioctl(
-            s.fileno(),
-            0x8915,  # SIOCGIFADDR
-            struct.pack('256s', ifname[:15])
-        )[20:24])
+        s.connect(('8.8.8.8', 53))
+        ipaddr = s.getsockname()[0]
+        s.close()
+        return ipaddr
     except Exception as ex:
         return '0.0.0.0'
 

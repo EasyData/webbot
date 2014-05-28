@@ -31,7 +31,6 @@ class StatsPoster(object):
     def spider_closed(self, spider, reason):
         if self.enabled and hasattr(spider, 'logger'):
             try:
-                from pymongo import uri_parser, MongoClient
                 uri = spider.logger
                 if not uri:
                     return
@@ -45,7 +44,7 @@ class StatsPoster(object):
                 self.stats.set_value('finish_time', now, spider=spider)
                 self.stats.set_value('elapsed_time', (now-ago).total_seconds(), spider=spider)
                 self.stats.set_value('finish_reason', reason, spider=spider)
-                self.stats.set_value('bot_ip', utils.get_ipaddr('eth0'))
+                self.stats.set_value('bot_ip', utils.get_ipaddr())
                 self.stats.set_value('bot_name', self.crawler.settings.get('BOT_NAME', 'unknown'))
                 self.stats.set_value('spider_name', spider.name)
                 self.stats.set_value('config_path', spider.config)

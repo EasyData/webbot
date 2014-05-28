@@ -36,6 +36,7 @@ EXTENSIONS = {
 }
 
 DOWNLOADER_MIDDLEWARES = {
+    'webbot.middlewares.RequestMiddleware': 0,
     'webbot.middlewares.DedupMiddleware': 999,
     'webbot.middlewares.ProxyMiddleware': 999,
 }
