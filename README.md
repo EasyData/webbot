@@ -333,7 +333,9 @@ A simple webbot based on scrapy(0.22.2)
                     {"type":"unesc"}
 
             * `clean`, 清理HTML(自动去除style/script/meta/links等)
-            * `jpath`, jpath表达式
+            * `jpath`, jpath表达式, 参考: <http://goessner.net/articles/JsonPath/>
+            * `xpath`, xpath表达式, 用于提取
+            * `purge`, xpath表达式, 用于排除
             * `sub`, 字符替换
                 - `from`, 替换前
                 - `to`, 替换后, 值类型为`string`或`list of string`

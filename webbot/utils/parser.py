@@ -128,9 +128,21 @@ class XpathParser(BaseParser):
 
     def parse(self, data):
 
-        qs = self.inf.get('query')
+        qs = self.inf['query']
         dom = html.fromstring(data)
         return dom.xpath(qs)
+
+class PurgeParser(BaseParser):
+
+    def parse(self, data):
+
+        qs = self.inf['query']
+        dom = html.fromstring(data)
+        es = dom.xpath(qs)
+        for e in es:
+            if e in dom:
+                dom.remove(e)
+        return html.tostring(dom, encoding=unicode)
 
 class JpathParser(BaseParser):
 
