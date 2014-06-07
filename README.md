@@ -37,7 +37,7 @@ A simple webbot based on scrapy(0.22.2)
 
 - schedule:
 
-        $ curl http://localhost:6800/schedule.json -d project=<project> -d spider=<spider> -d config=</path/to/spider.conf> -d setting=DOWNLOAD_DELAY=1
+        $ curl http://localhost:6800/schedule.json -d project=<project> -d spider=<spider> -d setting=config=</path/to/spider.conf> -d setting=DOWNLOAD_DELAY=1
 
 - cancel:
 
@@ -630,7 +630,7 @@ A simple webbot based on scrapy(0.22.2)
     # 设置别名
     $ vim ~/.bashrc
 
-        alias webbot='PYTHONPATH=~/github/webbot SCRAPY_SETTINGS_MODULE=webbot.settings scrapy crawl webbot -a debug=true -a tz=+08:00 -a'
+        alias webbot='PYTHONPATH=~/github/webbot SCRAPY_SETTINGS_MODULE=webbot.settings scrapy crawl webbot -s debug=true -s tz=+08:00 -s'
 
     # 加载别名
     $ . ~/.bashrc
@@ -647,7 +647,7 @@ A simple webbot based on scrapy(0.22.2)
     $ webbot config=douban.conf
 
     # 调试配置
-    $ webbot config=douban.conf -a verbose=9 -L DEBUG
+    $ webbot config=douban.conf -s verbose=9 -L DEBUG
 
 ## TODO
 

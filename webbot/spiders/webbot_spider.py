@@ -3,6 +3,7 @@
 
 from cssselect.xpath import HTMLTranslator
 from scrapy import log
+from scrapy import signals
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.spiders import CrawlSpider, Rule
@@ -27,31 +28,26 @@ class WebbotSpider(CrawlSpider):
 
     name = 'webbot'
 
-    def __init__(self, config=None, debug=None, verbose=0, **kwargs):
+    def set_crawler(self, crawler):
 
-        super(WebbotSpider, self).__init__()
+        CrawlSpider.set_crawler(self, crawler)
+        self.config_spider()
+        crawler.signals.connect(self.print_msg, signal=signals.spider_opened)
 
-        if not config:
-            return
+    def config_spider(self):
 
+        settings = self.crawler.settings
         self.disabled = []
-        self.config = config
-        self.debug = debug
-        self.verbose = int(verbose)
-        self.tz = kwargs.get('tz', '+00:00')
+        self.config = settings['config']
+
+        if not self.config:
+            raise Exception('config is empty')
+
+        self.debug = settings.getbool('debug')
+        self.verbose = settings.getint('verbose')
+        self.tz = settings.get('tz', '+00:00')
         self.conf = self.load_config()
-        self.debug_mode()
 
-    def start_requests(self):
-
-        self.print_msg()
-
-        for i in CrawlSpider.start_requests(self):
-            yield i
-
-    def debug_mode(self):
-
-        self.debug = str(self.debug).upper()=='TRUE'
         if not self.debug:
             return
 
