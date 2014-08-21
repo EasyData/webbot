@@ -366,6 +366,8 @@ class WebbotSpider(CrawlSpider):
 
     def make_cookies(self, cookies):
 
+        if type(cookies) == list:
+            cookies = cookies[0]
         if type(cookies) == unicode:
             cookies = cookies.encode('utf-8')
         if type(cookies)==str:
