@@ -1,7 +1,7 @@
 Webbot用户手册
 ==============
 
-A simple webbot based on scrapy(0.22.2)
+A simple webbot based on scrapy(0.24.6)
 
 ## 功能列表
 
@@ -543,7 +543,7 @@ A simple webbot based on scrapy(0.22.2)
     $ yum install -y vim tree && ln -sf /usr/bin/vim /bin/vi
     $ yum install -y ntpdate ntp && chkconfig ntpd on && service ntpd start
     $ yum install -y libxml2-devel.x86_64 libxslt-devel.x86_64 openssl-devel
-    $ PKGS=(pip scrapy==0.18.4 scrapyd pyzmq==13.1.0 redis pymongo jsonpath cssselect requests jinja2 chardet)
+    $ PKGS=(pip scrapy==0.24.6 scrapyd pyzmq==13.1.0 redis pymongo jsonpath cssselect requests jinja2 chardet)
     $ pip install --no-index --find-links http://192.168.3.196/pip ${PKGS[@]}
 
     # 创建用户

@@ -1,0 +1,9 @@
+--allow-external jsonpath
+--allow-unverified jsonpath
+jsonpath
+pymongo
+pymysql
+pyzmq
+redis
+requests
+service_identity
